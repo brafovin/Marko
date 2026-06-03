@@ -264,7 +264,7 @@ function initState(mapType) {
     xp: 0,
     xpToNext: 100,
     activePerks: [],
-    pendingLevelUp: false,
+    pendingLevelUps: 0,
     levelFlash: 0,
   };
   generateMap();
@@ -1666,7 +1666,7 @@ function gainXP(amount) {
     G.xp -= G.xpToNext;
     G.level++;
     G.xpToNext = Math.floor(80 * Math.pow(1.35, G.level - 1));
-    triggerLevelUp();
+    G.pendingLevelUps = (G.pendingLevelUps || 0) + 1;
   }
   updateHUD();
 }
@@ -1676,29 +1676,43 @@ function triggerLevelUp() {
   showPerkOverlay(shuffled.slice(0, 3));
 }
 
+let _overlayPerks = [];
 function showPerkOverlay(perks) {
+  _overlayPerks = perks;
   const overlay = document.getElementById('level-up-overlay');
   document.getElementById('level-up-num').textContent = `LEVEL ${G.level}`;
   const container = document.getElementById('perk-cards');
   container.innerHTML = '';
-  perks.forEach(perk => {
+  perks.forEach((perk, i) => {
     const card = document.createElement('div');
     card.style.cssText = 'width:180px;background:#1a1a28;border:2px solid rgba(255,215,0,0.3);border-radius:12px;padding:28px 20px;text-align:center;cursor:pointer;transition:all 0.2s;';
-    card.innerHTML = `<div style="font-size:2.5rem;margin-bottom:12px;">${perk.icon}</div><div style="font-size:0.9rem;font-weight:900;color:#fff;letter-spacing:0.08em;margin-bottom:8px;">${perk.name}</div><div style="font-size:0.78rem;color:#aaa;">${perk.desc}</div>`;
+    card.innerHTML = `<div style="font-size:1.6rem;color:rgba(255,215,0,0.5);letter-spacing:0.1em;margin-bottom:6px;">[${i+1}]</div><div style="font-size:2.5rem;margin-bottom:12px;">${perk.icon}</div><div style="font-size:0.9rem;font-weight:900;color:#fff;letter-spacing:0.08em;margin-bottom:8px;">${perk.name}</div><div style="font-size:0.78rem;color:#aaa;">${perk.desc}</div>`;
     card.onmouseenter = () => { card.style.borderColor='#ffd700'; card.style.transform='translateY(-4px)'; card.style.background='#24243a'; };
     card.onmouseleave = () => { card.style.borderColor='rgba(255,215,0,0.3)'; card.style.transform=''; card.style.background='#1a1a28'; };
-    card.onclick = () => {
-      perk.apply(G.player);
-      G.player.activePerks.push(perk.id);
-      overlay.style.display = 'none';
-      G.paused = false;
-      G.levelFlash = 1.0;
-      requestAnimationFrame(gameLoop);
-    };
+    card.onclick = (e) => { e.stopPropagation(); selectPerk(perk); };
     container.appendChild(card);
   });
+  overlay.onclick = null;
+  overlay.onclick = () => selectPerk(perks[0]);
   overlay.style.display = 'flex';
   G.paused = true;
+  G.mouseDown = false;
+  G.mouseJustDown = false;
+}
+
+function selectPerk(perk) {
+  perk.apply(G.player);
+  G.player.activePerks.push(perk.id);
+  document.getElementById('level-up-overlay').style.display = 'none';
+  G.pendingLevelUps = (G.pendingLevelUps || 1) - 1;
+  if (G.pendingLevelUps > 0) {
+    triggerLevelUp();
+  } else {
+    G.paused = false;
+    G.levelFlash = 1.0;
+    G.lastTime = performance.now();
+    requestAnimationFrame(gameLoop);
+  }
 }
 
 // ─── GAME LOOP ───────────────────────────────────────────────────
@@ -1746,6 +1760,11 @@ function gameLoop(ts){
   drawCrosshair();
   updateHUD();
   drawMinimap();
+
+  if (G.pendingLevelUps > 0) {
+    triggerLevelUp();
+    return;
+  }
 
   requestAnimationFrame(gameLoop);
 }
@@ -1814,8 +1833,13 @@ window.addEventListener('keydown',e=>{
       }
     }
   }
+  if(G.paused && _overlayPerks.length){
+    if(e.code==='Digit1') selectPerk(_overlayPerks[0]);
+    if(e.code==='Digit2' && _overlayPerks[1]) selectPerk(_overlayPerks[1]);
+    if(e.code==='Digit3' && _overlayPerks[2]) selectPerk(_overlayPerks[2]);
+    return;
+  }
   if(e.code==='Escape'){
-    if(G.paused) return; // level-up overlay open, ignore
     G.running=!G.running;
     if(G.running) requestAnimationFrame(gameLoop);
   }
