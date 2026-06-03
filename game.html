@@ -787,27 +787,7 @@ function drawEnemies(){
     ctx.translate(px,py);
     ctx.rotate(e.angle+Math.PI/2);
 
-    if(e.type==='boss'){
-      // Boss: spiky shape
-      ctx.fillStyle=e.color;
-      ctx.beginPath();
-      for(let s=0;s<8;s++){
-        const a=(s/8)*Math.PI*2;
-        const r=s%2===0?e.size:e.size*0.55;
-        ctx.lineTo(Math.cos(a)*r,Math.sin(a)*r);
-      }
-      ctx.closePath();ctx.fill();
-    } else if(e.type==='heavy'){
-      ctx.fillStyle=e.color;
-      ctx.fillRect(-e.size,-e.size,e.size*2,e.size*2);
-    } else {
-      ctx.fillStyle=e.color;
-      ctx.beginPath();
-      ctx.moveTo(0,-e.size);
-      ctx.lineTo(e.size*0.7,e.size*0.7);
-      ctx.lineTo(-e.size*0.7,e.size*0.7);
-      ctx.closePath();ctx.fill();
-    }
+    drawHumanFigure(e.type, e.color, e.size, {now: performance.now()});
     ctx.restore();
 
     // HP bar
@@ -816,6 +796,148 @@ function drawEnemies(){
     ctx.fillRect(px-hw/2,py-e.size-10,hw,4);
     ctx.fillStyle=e.hp/e.maxHp>0.5?'#2ec4b6':'#e63946';
     ctx.fillRect(px-hw/2,py-e.size-10,hw*(e.hp/e.maxHp),4);
+  }
+}
+
+function drawHumanFigure(type, color, size, options={}) {
+  const s = size;
+  const now = options.now || 0;
+  const lw = Math.max(1.5, s * 0.18);
+  const walk = Math.sin(now * 0.007) * s * 0.22;
+  const skin = '#e8c49a';
+  const headR = s * 0.34;
+  const shoulderY = -s * 0.52;
+  const hipY = s * 0.2;
+  const footY = s * (type==='runner' ? 1.0 : 0.88);
+  const bw = (type==='heavy'||type==='boss') ? s*0.52 : s*0.36;
+
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  // LEGS
+  ctx.strokeStyle = color;
+  ctx.lineWidth = lw * 1.1;
+  ctx.beginPath(); ctx.moveTo(-s*0.18, hipY); ctx.lineTo(-s*0.22 + walk, footY); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo( s*0.18, hipY); ctx.lineTo( s*0.22 - walk, footY); ctx.stroke();
+
+  // Shoes
+  ctx.fillStyle = type==='boss'?'#6c3483':type==='heavy'?'#333':'#222';
+  ctx.beginPath(); ctx.ellipse(-s*0.22+walk, footY, s*0.17, s*0.08, 0, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse( s*0.22-walk, footY, s*0.17, s*0.08, 0, 0, Math.PI*2); ctx.fill();
+
+  // TORSO
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(-bw, shoulderY);
+  ctx.lineTo( bw, shoulderY);
+  ctx.lineTo( bw*0.75, hipY);
+  ctx.lineTo(-bw*0.75, hipY);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,0.18)'; ctx.lineWidth = 1; ctx.stroke();
+
+  // ARMS
+  ctx.lineWidth = lw;
+  if (options.gunColor) {
+    ctx.strokeStyle = skin;
+    ctx.beginPath(); ctx.moveTo(bw, shoulderY+s*0.05); ctx.lineTo(bw+s*0.28, shoulderY-s*0.3); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-bw, shoulderY+s*0.05); ctx.lineTo(-bw-s*0.22, hipY-s*0.05+walk*0.4); ctx.stroke();
+    ctx.strokeStyle = options.gunColor; ctx.lineWidth = lw*0.85;
+    ctx.beginPath(); ctx.moveTo(bw+s*0.28, shoulderY-s*0.3); ctx.lineTo(bw+s*0.4, shoulderY-s*0.75); ctx.stroke();
+  } else {
+    ctx.strokeStyle = skin;
+    ctx.beginPath(); ctx.moveTo( bw, shoulderY+s*0.05); ctx.lineTo( bw+s*0.26, hipY-walk*0.35); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-bw, shoulderY+s*0.05); ctx.lineTo(-bw-s*0.26, hipY+walk*0.35); ctx.stroke();
+  }
+
+  // NECK
+  ctx.strokeStyle = skin; ctx.lineWidth = lw*0.65;
+  ctx.beginPath(); ctx.moveTo(0, shoulderY); ctx.lineTo(0, -s*0.62+headR); ctx.stroke();
+
+  // HEAD
+  const headY = -s * 0.65;
+  ctx.beginPath(); ctx.arc(0, headY, headR, 0, Math.PI*2);
+  ctx.fillStyle = skin; ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,0.1)'; ctx.lineWidth = 1; ctx.stroke();
+
+  // HAIR / HELMET / ACCESSORY
+  if (type==='player') {
+    ctx.fillStyle = '#3d2b1f';
+    ctx.beginPath(); ctx.arc(0, headY, headR, Math.PI*1.05, Math.PI*1.95); ctx.fill();
+    ctx.fillStyle = '#2a1f17';
+    ctx.fillRect(-headR*1.1, headY-headR*0.18, headR*2.2, headR*0.22);
+  } else if (type==='grunt') {
+    ctx.fillStyle = '#1c1c1c';
+    ctx.beginPath(); ctx.arc(0, headY, headR, Math.PI, 0); ctx.fill();
+  } else if (type==='runner') {
+    ctx.fillStyle = '#7b0000';
+    ctx.beginPath(); ctx.arc(0, headY, headR, Math.PI*1.05, 0); ctx.fill();
+  } else if (type==='heavy') {
+    ctx.fillStyle = '#3a3a3a';
+    ctx.beginPath(); ctx.arc(0, headY, headR*1.15, Math.PI, 0); ctx.fill();
+    ctx.fillStyle = '#222'; ctx.fillRect(-headR*1.2, headY-headR*0.05, headR*2.4, headR*0.22);
+  } else if (type==='sniper') {
+    ctx.fillStyle = '#0a2a0a';
+    ctx.beginPath(); ctx.arc(0, headY, headR, Math.PI*1.05, Math.PI*1.95); ctx.fill();
+    ctx.fillStyle = '#1a3d1a';
+    ctx.fillRect(-headR*0.3, headY-headR*1.2, headR*0.6, headR*0.7);
+  } else if (type==='exploder') {
+    ctx.fillStyle = '#cc3300';
+    for (let i=0;i<6;i++){
+      const a=(i/6)*Math.PI-0.1;
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(a-0.15)*headR*0.85, headY+Math.sin(a-0.15)*headR*0.85);
+      ctx.lineTo(Math.cos(a)*headR*1.7, headY+Math.sin(a)*headR*1.7);
+      ctx.lineTo(Math.cos(a+0.15)*headR*0.85, headY+Math.sin(a+0.15)*headR*0.85);
+      ctx.closePath(); ctx.fill();
+    }
+  } else if (type==='boss') {
+    ctx.fillStyle = '#5c1a8c';
+    ctx.beginPath(); ctx.arc(0, headY, headR, Math.PI, 0); ctx.fill();
+    ctx.fillStyle = '#ffd700';
+    for (let i=0;i<5;i++){
+      const bx = -headR + (i/4)*headR*2;
+      ctx.beginPath();
+      ctx.moveTo(bx-headR*0.18, headY-headR*0.08);
+      ctx.lineTo(bx, headY-headR*(0.55+(i%2)*0.38));
+      ctx.lineTo(bx+headR*0.18, headY-headR*0.08);
+      ctx.closePath(); ctx.fill();
+    }
+  }
+
+  // EYES
+  const eyeY = headY - headR*0.06;
+  const er = headR*0.22;
+  ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.ellipse( headR*0.33, eyeY, er, er*0.85, 0, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(-headR*0.33, eyeY, er, er*0.85, 0, 0, Math.PI*2); ctx.fill();
+  const pupil = type==='boss'?'#9b59b6':type==='exploder'?'#ff2200':'#111';
+  ctx.fillStyle = pupil;
+  ctx.beginPath(); ctx.arc( headR*0.33, eyeY, er*0.48, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(-headR*0.33, eyeY, er*0.48, 0, Math.PI*2); ctx.fill();
+
+  // MOUTH
+  ctx.strokeStyle = 'rgba(0,0,0,0.32)'; ctx.lineWidth = headR*0.09;
+  ctx.beginPath();
+  if (type==='boss'||type==='heavy') {
+    ctx.arc(0, eyeY+headR*0.55, headR*0.22, 0.3, Math.PI-0.3);
+  } else {
+    ctx.moveTo(-headR*0.2, eyeY+headR*0.54); ctx.lineTo(headR*0.2, eyeY+headR*0.54);
+  }
+  ctx.stroke();
+
+  // BOSS shoulder pads
+  if (type==='boss') {
+    ctx.fillStyle = '#6c3483';
+    ctx.beginPath(); ctx.arc(-bw, shoulderY, s*0.18, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc( bw, shoulderY, s*0.18, 0, Math.PI*2); ctx.fill();
+  }
+
+  // EXPLODER bomb vest
+  if (type==='exploder') {
+    ctx.fillStyle = '#ff8800';
+    ctx.font = `bold ${Math.max(7,s*0.34)}px monospace`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('!', 0, (shoulderY+hipY)*0.5);
   }
 }
 
@@ -835,23 +957,10 @@ function drawPlayer(){
   ctx.translate(px,py);
   ctx.rotate(angle+Math.PI/2);
 
-  // Shadow
   ctx.shadowColor='#2ec4b6';
   ctx.shadowBlur=16;
-
-  // Body
-  ctx.fillStyle='#e0e0f0';
-  ctx.beginPath();
-  ctx.moveTo(0,-14);
-  ctx.lineTo(10,8);
-  ctx.lineTo(0,4);
-  ctx.lineTo(-10,8);
-  ctx.closePath();
-  ctx.fill();
-
-  // Gun arm
-  ctx.fillStyle='#888';
-  ctx.fillRect(4,-8,8,16);
+  const pw=G.player.weapons[G.player.weapon];
+  drawHumanFigure('player','#3a7bd5',14,{now:performance.now(),gunColor:pw.color});
 
   ctx.restore();
 
