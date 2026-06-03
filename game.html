@@ -1202,6 +1202,132 @@ function drawLaser() {
   ctx.restore();
 }
 
+// =============================================================
+// PLASMA NOVA ATTACK (C key)
+// =============================================================
+var novaOrbs = [];
+var novaCooldown = 0;
+var novaMaxCooldown = 360; // 6 seconds
+
+function useNova() {
+  if (novaCooldown > 0) return;
+  novaCooldown = novaMaxCooldown;
+  screenShake = 6;
+  spawnParticles(player.x, player.y, 20, '#ff44ff', 2, 6, 20, 40, 2, 4);
+  // Fire 8 plasma orbs in all directions
+  for (var i = 0; i < 8; i++) {
+    var a = (i / 8) * Math.PI * 2;
+    novaOrbs.push({
+      x: player.x, y: player.y,
+      vx: Math.cos(a) * 4, vy: Math.sin(a) * 4,
+      life: 120, maxLife: 120,
+      angle: a, homing: false, homingTimer: 15,
+      trail: [],
+    });
+  }
+}
+
+function updateNova() {
+  if (novaCooldown > 0) novaCooldown--;
+  var i, j, e, orb, best, bestDist, d;
+  for (i = novaOrbs.length - 1; i >= 0; i--) {
+    orb = novaOrbs[i];
+    orb.life--;
+    if (orb.life <= 0) { novaOrbs.splice(i, 1); continue; }
+
+    // Trail
+    orb.trail.push({ x: orb.x, y: orb.y });
+    if (orb.trail.length > 10) orb.trail.shift();
+
+    // Homing: after brief delay, find nearest enemy
+    if (orb.homingTimer > 0) { orb.homingTimer--; }
+    else {
+      best = null; bestDist = 9999;
+      for (j = 0; j < enemies.length; j++) {
+        d = dist(orb.x, orb.y, enemies[j].x, enemies[j].y);
+        if (d < bestDist) { bestDist = d; best = enemies[j]; }
+      }
+      if (!best && boss && boss.alive) best = boss;
+      if (best) {
+        var ta = angTo(orb.x, orb.y, best.x, best.y);
+        var curA = Math.atan2(orb.vy, orb.vx);
+        var diff = ta - curA;
+        while (diff > Math.PI) diff -= Math.PI * 2;
+        while (diff < -Math.PI) diff += Math.PI * 2;
+        curA += diff * 0.12;
+        var spd = Math.hypot(orb.vx, orb.vy);
+        spd = Math.min(spd + 0.15, 7);
+        orb.vx = Math.cos(curA) * spd;
+        orb.vy = Math.sin(curA) * spd;
+      }
+    }
+
+    orb.x += orb.vx;
+    orb.y += orb.vy;
+
+    // Off screen
+    if (orb.x < -30 || orb.x > W + 30 || orb.y < -30 || orb.y > H + 30) {
+      novaOrbs.splice(i, 1); continue;
+    }
+
+    // Hit enemies
+    var hit = false;
+    for (j = enemies.length - 1; j >= 0; j--) {
+      e = enemies[j];
+      if (dist(orb.x, orb.y, e.x, e.y) < e.size + 8) {
+        if (e.shieldActive) {
+          e.shieldHp -= 2;
+          if (e.shieldHp <= 0) { e.shieldActive = false; spawnParticles(e.x, e.y, 10, '#4488ff', 2, 4, 12, 24, 2, 3); }
+        } else {
+          e.hp -= 3; e.hitFlash = 8;
+          if (e.hp <= 0) killEnemy(e, j);
+        }
+        spawnParticles(orb.x, orb.y, 8, '#ff44ff', 1, 4, 10, 20, 1, 3);
+        novaOrbs.splice(i, 1); hit = true; break;
+      }
+    }
+    if (hit) continue;
+    // Hit boss
+    if (boss && boss.alive && dist(orb.x, orb.y, boss.x, boss.y) < boss.size + 8) {
+      boss.hp -= 8; boss.hitFlash = 8;
+      if (boss.hp <= 0) killBoss();
+      spawnParticles(orb.x, orb.y, 12, '#ff44ff', 2, 5, 15, 30, 2, 4);
+      novaOrbs.splice(i, 1);
+    }
+  }
+}
+
+function drawNova() {
+  var i, t, orb, alpha, r, p;
+  for (i = 0; i < novaOrbs.length; i++) {
+    orb = novaOrbs[i];
+    alpha = orb.life / orb.maxLife;
+    r = 7 + Math.sin(orb.life * 0.4) * 2;
+
+    // Trail
+    for (t = 0; t < orb.trail.length; t++) {
+      p = orb.trail[t];
+      var ta = (t / orb.trail.length) * alpha * 0.5;
+      ctx.globalAlpha = ta;
+      ctx.fillStyle = '#ff00ff';
+      ctx.beginPath(); ctx.arc(p.x, p.y, r * (t / orb.trail.length) * 0.7, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+
+    // Orb body
+    glow('#ff00ff', 20);
+    var grad = ctx.createRadialGradient(orb.x, orb.y, 0, orb.x, orb.y, r);
+    grad.addColorStop(0, '#ffffff');
+    grad.addColorStop(0.4, '#ff88ff');
+    grad.addColorStop(1, 'rgba(180,0,255,0)');
+    ctx.fillStyle = grad;
+    ctx.globalAlpha = alpha;
+    ctx.beginPath(); ctx.arc(orb.x, orb.y, r, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = 1;
+    noGlow();
+  }
+}
+
 function useBomb() {
   if (player.bombs <= 0 || bombActive || bombCooldown > 0) return;
   player.bombs--;
@@ -1300,6 +1426,19 @@ function drawHUD() {
   ctx.font = 'bold 9px Courier New'; ctx.textAlign = 'left';
   ctx.fillText('LASER [X]' + (laserReady ? ' READY' : ''), 10, H - 36);
 
+  // Nova cooldown bar
+  var novaReady = novaCooldown <= 0;
+  var novaFill = novaReady ? 1 : 1 - novaCooldown / novaMaxCooldown;
+  ctx.fillStyle = 'rgba(255,255,255,0.1)';
+  ctx.fillRect(100, H - 32, 80, 7);
+  glow(novaReady ? '#ff44ff' : '#880088', novaReady ? 8 : 3);
+  ctx.fillStyle = novaReady ? '#ff44ff' : '#550055';
+  ctx.fillRect(100, H - 32, 80 * novaFill, 7);
+  noGlow();
+  ctx.fillStyle = novaReady ? '#ff88ff' : '#664466';
+  ctx.font = 'bold 9px Courier New'; ctx.textAlign = 'left';
+  ctx.fillText('NOVA [C]' + (novaReady ? ' READY' : ''), 100, H - 36);
+
   glow('#ffffff', 6);
   ctx.fillStyle = '#ffffff'; ctx.font = 'bold 13px Courier New'; ctx.textAlign = 'right';
   ctx.fillText(padScore(score), W - 10, 20);
@@ -1391,7 +1530,7 @@ function startFromMap(stageNum) {
   powerups = []; particles = []; floatingTexts = [];
   boss = null; bossActive = false; bossDefeated = false;
   combo = 1; comboTimer = 0;
-  bombActive = false; bombCooldown = 0; laserActive = false; laserTimer = 0; laserCooldown = 0;
+  bombActive = false; bombCooldown = 0; laserActive = false; laserTimer = 0; laserCooldown = 0; novaOrbs = []; novaCooldown = 0;
   spawnTimer = 0; wavesDone = false;
   stageAnnounceTimer = 120; bossAnnounceTimer = 0;
   initStars(); initNebulae();
@@ -1635,7 +1774,7 @@ function gameLoop() {
     if (player.alive) { updatePlayer(); updatePlayerBullets(); }
     updateEnemyBullets(); updateEnemies();
     if (bossActive && boss && boss.alive) updateBoss();
-    processSpawnQueue(); updateBomb(); updateLaser();
+    processSpawnQueue(); updateBomb(); updateLaser(); updateNova();
     if (bombCooldown > 0) bombCooldown--;
     if (laserCooldown > 0) laserCooldown--;
 
@@ -1645,11 +1784,14 @@ function gameLoop() {
     if (keys['KeyX'] || keys['x'] || keys['X']) {
       useLaser(); keys['KeyX'] = false; keys['x'] = false; keys['X'] = false;
     }
+    if (keys['KeyC'] || keys['c'] || keys['C']) {
+      useNova(); keys['KeyC'] = false; keys['c'] = false; keys['C'] = false;
+    }
     if (keys['Escape']) { keys['Escape'] = false; gameState = STATE.PAUSED; }
 
     applyScreenShake();
     drawBackground(); drawParticles(); drawPowerups();
-    drawEnemies(); drawBoss(); drawEnemyBullets(); drawPlayerBullets(); drawBomb(); drawLaser();
+    drawEnemies(); drawBoss(); drawEnemyBullets(); drawPlayerBullets(); drawBomb(); drawLaser(); drawNova();
 
     if (player.alive) {
       var invFlicker = player.invincible > 0 && Math.floor(player.invincible / 5) % 2 === 0;
