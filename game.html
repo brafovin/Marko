@@ -42,6 +42,25 @@
   .weapon-slot{padding:8px 16px;border:1px solid rgba(255,255,255,0.1);border-radius:4px;font-size:0.75rem;font-weight:700;letter-spacing:0.08em;color:#666;background:rgba(0,0,0,0.5);transition:all 0.2s;}
   .weapon-slot.active{border-color:#2ec4b6;color:#2ec4b6;background:rgba(46,196,182,0.1);}
   .weapon-slot.locked{color:#333;border-color:#222;}
+  /* MAP SELECT */
+  .map-select-grid{display:flex;gap:18px;justify-content:center;flex-wrap:wrap;margin-bottom:28px;}
+  .map-card-s{width:210px;border:2px solid rgba(255,255,255,0.1);border-radius:12px;overflow:hidden;cursor:pointer;transition:all 0.25s;background:rgba(255,255,255,0.03);}
+  .map-card-s:hover{transform:translateY(-6px);}
+  .map-card-s.jungle:hover{border-color:#4caf50;}
+  .map-card-s.arctic:hover{border-color:#64b5f6;}
+  .map-card-s.volcano:hover{border-color:#ff5722;}
+  .map-preview{height:110px;display:flex;align-items:center;justify-content:center;font-size:3.2rem;position:relative;overflow:hidden;}
+  .jungle-prev{background:radial-gradient(ellipse at 50% 60%,#1e5c0a,#0a1a05);}
+  .arctic-prev{background:radial-gradient(ellipse at 50% 60%,#1a4a7a,#050e18);}
+  .volcano-prev{background:radial-gradient(ellipse at 50% 80%,#b02010,#1a0500);}
+  .map-card-info{padding:14px 16px;}
+  .map-card-info h3{font-size:0.92rem;font-weight:900;letter-spacing:0.1em;margin-bottom:5px;}
+  .map-jungle h3{color:#69d44e;} .map-arctic h3{color:#82d0f5;} .map-volcano h3{color:#ff7043;}
+  .map-card-info p{font-size:0.76rem;color:#777;margin-bottom:10px;line-height:1.5;}
+  .map-diff{font-size:0.68rem;font-weight:700;letter-spacing:0.12em;padding:3px 9px;border-radius:3px;}
+  .diff-mid{background:rgba(76,175,80,0.15);color:#4caf50;}
+  .diff-hard{background:rgba(100,181,246,0.15);color:#64b5f6;}
+  .diff-xhard{background:rgba(255,87,34,0.15);color:#ff5722;}
 </style>
 </head>
 <body>
@@ -84,11 +103,36 @@
 
   <div id="overlay">
     <div class="overlay-title">VOIDSTRIKE</div>
-    <div class="overlay-sub">ÜBERLEBE SO LANGE WIE MÖGLICH</div>
-    <button class="overlay-btn" onclick="startGame()">SPIEL STARTEN</button>
+    <div class="overlay-sub">WÄHLE DEINE MAP</div>
+    <div class="map-select-grid">
+      <div class="map-card-s jungle" onclick="startGame('jungle')">
+        <div class="map-preview jungle-prev">🌿</div>
+        <div class="map-card-info map-jungle">
+          <h3>DSCHUNGEL</h3>
+          <p>Dichter Urwald, enge Pfade, Flusssperren. Viel Deckung.</p>
+          <span class="map-diff diff-mid">MITTEL</span>
+        </div>
+      </div>
+      <div class="map-card-s arctic" onclick="startGame('arctic')">
+        <div class="map-preview arctic-prev">❄️</div>
+        <div class="map-card-info map-arctic">
+          <h3>ARKTIS</h3>
+          <p>Offenes Eisfeld, Gletscher, gefrorener See. Sniper-Terrain.</p>
+          <span class="map-diff diff-hard">SCHWER</span>
+        </div>
+      </div>
+      <div class="map-card-s volcano" onclick="startGame('volcano')">
+        <div class="map-preview volcano-prev">🌋</div>
+        <div class="map-card-info map-volcano">
+          <h3>VULKAN</h3>
+          <p>Lavakanäle, Felsnadeln, Kraterrand. Extremes Terrain.</p>
+          <span class="map-diff diff-xhard">SEHR SCHWER</span>
+        </div>
+      </div>
+    </div>
     <div class="controls-hint">
       <span>WASD</span> Bewegen &nbsp;|&nbsp; <span>Maus</span> Zielen &nbsp;|&nbsp; <span>Klick</span> Schießen<br>
-      <span>1-5</span> Waffe wechseln &nbsp;|&nbsp; <span>R</span> Nachladen &nbsp;|&nbsp; <span>SHIFT</span> Sprint &nbsp;|&nbsp; <span>E</span> Aufheben
+      <span>1-6</span> Waffe &nbsp;|&nbsp; <span>R</span> Nachladen &nbsp;|&nbsp; <span>SHIFT</span> Sprint &nbsp;|&nbsp; <span>SPACE</span> Dash
     </div>
   </div>
 </div>
@@ -112,6 +156,12 @@ window.addEventListener('resize', resize);
 const MAP_W = 3200, MAP_H = 2000;
 const TILE = 64;
 
+const MAP_THEME = {
+  jungle:  { floor:'#0b1a07', grid:'rgba(0,180,0,0.04)',    wallFill:'#1e4a10', wallLine:'#2d6e1a', wallTop:'rgba(100,200,50,0.1)',  wallGlow:'#3a8a20', mmFloor:'#0d220a', mmWall:'#2a5a12' },
+  arctic:  { floor:'#08121e', grid:'rgba(140,210,255,0.04)', wallFill:'#5a9ab8', wallLine:'#90c8e8', wallTop:'rgba(200,235,255,0.2)', wallGlow:'#a0d8f8', mmFloor:'#0a1828', mmWall:'#4a8aaa' },
+  volcano: { floor:'#140800', grid:'rgba(255,80,0,0.05)',   wallFill:'#1e1208', wallLine:'#2e1c0a', wallTop:'rgba(255,90,0,0.06)',   wallGlow:'#ff4400', mmFloor:'#1a0a00', mmWall:'#2a1a08' },
+};
+
 // ─── WEAPONS CONFIG ──────────────────────────────────────────────
 const WEAPONS = [
   { id:0, name:'PISTOLE',  color:'#aaa',    damage:25,  rate:400,  speed:14, spread:0.04, ammo:-1,   maxAmmo:-1,  reloadTime:800,  burst:1, auto:false, unlockWave:1 },
@@ -134,7 +184,7 @@ const ENEMY_TYPES = [
 
 // ─── GAME STATE ──────────────────────────────────────────────────
 let G = {};
-function initState() {
+function initState(mapType) {
   G = {
     running: false,
     paused: false,
@@ -149,6 +199,8 @@ function initState() {
     particles: [],
     drops: [],
     walls: [],
+    decorations: [],
+    mapType: mapType || 'jungle',
     lastTime: 0,
     mx: 0, my: 0,
     keys: {},
@@ -176,37 +228,126 @@ function initState() {
 // ─── MAP GENERATION ──────────────────────────────────────────────
 function generateMap() {
   G.walls = [];
-  // border walls
+  G.decorations = [];
   const B = 40;
-  G.walls.push({x:0,     y:0,      w:MAP_W, h:B});
-  G.walls.push({x:0,     y:MAP_H-B,w:MAP_W, h:B});
-  G.walls.push({x:0,     y:0,      w:B,     h:MAP_H});
-  G.walls.push({x:MAP_W-B,y:0,     w:B,     h:MAP_H});
+  G.walls.push({x:0,y:0,w:MAP_W,h:B},{x:0,y:MAP_H-B,w:MAP_W,h:B},{x:0,y:0,w:B,h:MAP_H},{x:MAP_W-B,y:0,w:B,h:MAP_H});
 
-  // interior obstacles
-  const rects = [
-    {x:400,  y:300,  w:160, h:80},
-    {x:700,  y:500,  w:80,  h:200},
-    {x:1200, y:200,  w:200, h:100},
-    {x:1500, y:600,  w:100, h:300},
-    {x:900,  y:800,  w:300, h:80},
-    {x:200,  y:900,  w:80,  h:300},
-    {x:600,  y:1200, w:200, h:80},
-    {x:1800, y:400,  w:120, h:120},
-    {x:2100, y:700,  w:80,  h:250},
-    {x:2400, y:300,  w:200, h:80},
-    {x:2600, y:900,  w:80,  h:200},
-    {x:1400, y:1300, w:300, h:80},
-    {x:800,  y:1500, w:80,  h:180},
-    {x:1800, y:1400, w:200, h:80},
-    {x:2200, y:1200, w:100, h:200},
-    {x:400,  y:1600, w:200, h:80},
-    {x:2800, y:600,  w:80,  h:300},
-    {x:500,  y:600,  w:80,  h:160},
-    {x:1100, y:1100, w:160, h:80},
-    {x:2500, y:1500, w:120, h:120},
-  ];
-  G.walls.push(...rects);
+  if (G.mapType === 'jungle')  buildJungle();
+  else if (G.mapType === 'arctic') buildArctic();
+  else buildVolcano();
+}
+
+function buildJungle() {
+  // Two rivers crossing the map with gaps for crossing
+  G.walls.push(
+    // Horizontal river at y≈730 — gap at x 1200-1420
+    {x:40,   y:728, w:1155, h:28},{x:1420, y:728, w:1740, h:28},
+    // Vertical river at x≈1580 — gap at y 750-950
+    {x:1573, y:40,  w:25,   h:688},{x:1573, y:952, w:25,  h:1008},
+    // NW grove — tree trunks
+    {x:180,y:100,w:32,h:150},{x:230,y:80,w:28,h:130},{x:310,y:120,w:32,h:160},{x:150,y:220,w:26,h:100},
+    {x:380,y:90,w:200,h:30}, // fallen log
+    {x:120,y:350,w:30,h:200},{x:170,y:370,w:25,h:180},
+    // NE grove
+    {x:1900,y:80,w:36,h:190},{x:1960,y:60,w:30,h:210},{x:2080,y:100,w:220,h:32}, // fallen log
+    {x:2380,y:80,w:34,h:180},{x:2460,y:110,w:28,h:150},{x:2600,y:70,w:36,h:220},
+    {x:2750,y:130,w:26,h:160},{x:2850,y:80,w:30,h:200},
+    // Center-west cover
+    {x:280,y:500,w:30,h:220},{x:340,y:520,w:26,h:200},
+    {x:500,y:460,w:180,h:30},{x:700,y:440,w:30,h:240},
+    // Center clearing — some logs
+    {x:1000,y:380,w:30,h:200},{x:1300,y:340,w:220,h:30},{x:1750,y:380,w:30,h:200},
+    // Center-east
+    {x:2100,y:480,w:28,h:210},{x:2250,y:440,w:170,h:30},{x:2500,y:400,w:30,h:250},
+    // South — dense undergrowth
+    {x:180,y:1000,w:150,h:30},{x:350,y:1000,w:30,h:220},{x:400,y:1030,w:26,h:190},
+    {x:600,y:960,w:30,h:260},{x:700,y:960,w:220,h:30},{x:950,y:940,w:30,h:300},
+    {x:1100,y:1100,w:30,h:200},{x:1200,y:1050,w:200,h:30},
+    // SE ruined compound
+    {x:2180,y:1150,w:440,h:38},{x:2180,y:1150,w:38,h:300},
+    {x:2582,y:1150,w:38,h:300},{x:2180,y:1410,w:170,h:38},{x:2448,y:1410,w:172,h:38},
+    // Far south
+    {x:300,y:1680,w:30,h:200},{x:600,y:1720,w:260,h:30},{x:1000,y:1640,w:30,h:240},
+    {x:1500,y:1700,w:38,h:200},{x:1900,y:1650,w:250,h:30},
+    {x:2400,y:1680,w:30,h:200},{x:2700,y:1600,w:30,h:280},
+  );
+  // Leaf decorations
+  const rng = seededRand(42);
+  for (let i=0;i<80;i++) G.decorations.push({type:'leaf',x:rng()*MAP_W,y:rng()*MAP_H,r:20+rng()*60,a:rng()});
+}
+
+function buildArctic() {
+  G.walls.push(
+    // Large glacier NW
+    {x:100,y:80,w:320,h:200},{x:80,y:380,w:180,h:260},{x:360,y:230,w:220,h:140},
+    // Large glacier NE
+    {x:2680,y:60,w:340,h:220},{x:2820,y:380,w:200,h:200},{x:2460,y:160,w:180,h:280},
+    // Ice ridges — long horizontal walls forcing flanking
+    {x:580,y:660,w:540,h:52},{x:2080,y:660,w:540,h:52},
+    {x:580,y:1288,w:540,h:52},{x:2080,y:1288,w:540,h:52},
+    // North ridges
+    {x:800,y:280,w:440,h:50},{x:1960,y:280,w:440,h:50},
+    // South ridges
+    {x:800,y:1680,w:440,h:50},{x:1960,y:1680,w:440,h:50},
+    // Center "frozen lake" corner pillars
+    {x:1100,y:580,w:110,h:110},{x:1990,y:580,w:110,h:110},
+    {x:1100,y:1310,w:110,h:110},{x:1990,y:1310,w:110,h:110},
+    // Lake centre obstacles
+    {x:1540,y:560,w:120,h:80},{x:1540,y:1360,w:120,h:80},
+    {x:1000,y:950,w:90,h:100},{x:2110,y:950,w:90,h:100},
+    // South glaciers
+    {x:80,y:1540,w:320,h:240},{x:480,y:1730,w:220,h:180},
+    {x:2740,y:1560,w:300,h:220},{x:2440,y:1740,w:220,h:160},
+    // Side corridors pillars
+    {x:700,y:940,w:80,h:120},{x:2420,y:940,w:80,h:120},
+    {x:200,y:760,w:120,h:80},{x:2880,y:760,w:120,h:80},
+    {x:200,y:1160,w:120,h:80},{x:2880,y:1160,w:120,h:80},
+  );
+  const rng = seededRand(77);
+  for (let i=0;i<50;i++) G.decorations.push({type:'snow',x:rng()*MAP_W,y:rng()*MAP_H,r:30+rng()*90,a:rng()});
+}
+
+function buildVolcano() {
+  G.walls.push(
+    // Central volcano mountain
+    {x:1380,y:820,w:440,h:360},
+    {x:1250,y:900,w:130,h:130},{x:1810,y:900,w:140,h:130},
+    {x:1430,y:700,w:340,h:120},
+    // Crater rim fragments
+    {x:1130,y:680,w:140,h:45},{x:1930,y:680,w:140,h:45},
+    {x:1130,y:1275,w:140,h:45},{x:1930,y:1275,w:140,h:45},
+    {x:1060,y:725,w:45,h:180},{x:2095,y:725,w:45,h:180},
+    {x:1060,y:1095,w:45,h:180},{x:2095,y:1095,w:45,h:180},
+    // Lava channels (thin long walls = channel banks)
+    {x:40,y:490,w:860,h:22},{x:2300,y:490,w:860,h:22},
+    {x:40,y:1488,w:860,h:22},{x:2300,y:1488,w:860,h:22},
+    {x:590,y:40,w:22,h:640},{x:2588,y:40,w:22,h:640},
+    {x:590,y:1320,w:22,h:640},{x:2588,y:1320,w:22,h:640},
+    // Rock spires — NW
+    {x:280,y:150,w:42,h:240},{x:360,y:100,w:30,h:280},
+    {x:160,y:280,w:34,h:320},{x:200,y:680,w:36,h:260},
+    // Rock spires — NE
+    {x:2878,y:150,w:42,h:240},{x:2810,y:100,w:30,h:280},
+    {x:3006,y:280,w:34,h:300},{x:2964,y:680,w:36,h:260},
+    // Rock spires — SW
+    {x:280,y:1600,w:42,h:260},{x:160,y:1440,w:34,h:280},
+    {x:200,y:1040,w:36,h:240},
+    // Rock spires — SE
+    {x:2878,y:1600,w:42,h:260},{x:3006,y:1440,w:34,h:280},
+    {x:2964,y:1040,w:36,h:240},
+    // Mid-field rocks
+    {x:880,y:380,w:36,h:230},{x:2284,y:380,w:36,h:230},
+    {x:880,y:1390,w:36,h:230},{x:2284,y:1390,w:36,h:230},
+    {x:1000,y:740,w:30,h:180},{x:2170,y:740,w:30,h:180},
+    {x:1000,y:1080,w:30,h:180},{x:2170,y:1080,w:30,h:180},
+  );
+  const rng = seededRand(13);
+  for (let i=0;i<60;i++) G.decorations.push({type:'lava',x:rng()*MAP_W,y:rng()*MAP_H,r:15+rng()*50,a:rng()});
+}
+
+function seededRand(seed) {
+  let s = seed;
+  return function() { s = (s*16807+0)%2147483647; return (s-1)/2147483646; };
 }
 
 // ─── WAVE SYSTEM ─────────────────────────────────────────────────
@@ -614,38 +755,129 @@ function dist(x1,y1,x2,y2){
 function drawMap(){
   const c=G.camera;
   const ox=canvas.width/2-c.x, oy=canvas.height/2-c.y;
+  const th=MAP_THEME[G.mapType];
+  const now=performance.now();
 
-  // Floor tiles
-  ctx.fillStyle='#0e0e16';
+  // Floor
+  ctx.fillStyle=th.floor;
   ctx.fillRect(0,0,canvas.width,canvas.height);
 
+  // Decorations (behind grid)
+  drawDecorations(ox, oy, now, th);
+
   // Grid
-  ctx.strokeStyle='rgba(255,255,255,0.03)';
+  ctx.strokeStyle=th.grid;
   ctx.lineWidth=1;
   const sx=Math.floor((c.x-canvas.width/2)/TILE)*TILE;
   const sy=Math.floor((c.y-canvas.height/2)/TILE)*TILE;
   for(let gx=sx;gx<c.x+canvas.width/2+TILE;gx+=TILE){
-    ctx.beginPath();
-    ctx.moveTo(gx+ox,0);ctx.lineTo(gx+ox,canvas.height);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(gx+ox,0);ctx.lineTo(gx+ox,canvas.height);ctx.stroke();
   }
   for(let gy=sy;gy<c.y+canvas.height/2+TILE;gy+=TILE){
-    ctx.beginPath();
-    ctx.moveTo(0,gy+oy);ctx.lineTo(canvas.width,gy+oy);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(0,gy+oy);ctx.lineTo(canvas.width,gy+oy);ctx.stroke();
   }
 
   // Walls
   for(const w of G.walls){
-    const wx=w.x+ox,wy=w.y+oy;
+    const wx=w.x+ox, wy=w.y+oy;
     if(wx+w.w<0||wx>canvas.width||wy+w.h<0||wy>canvas.height) continue;
-    ctx.fillStyle='#1a1a2e';
-    ctx.fillRect(wx,wy,w.w,w.h);
-    ctx.strokeStyle='#2a2a4e';
-    ctx.lineWidth=2;
-    ctx.strokeRect(wx,wy,w.w,w.h);
-    // top highlight
-    ctx.fillStyle='rgba(255,255,255,0.04)';
-    ctx.fillRect(wx,wy,w.w,4);
+
+    if(G.mapType==='jungle'){
+      ctx.fillStyle=th.wallFill;
+      ctx.fillRect(wx,wy,w.w,w.h);
+      ctx.strokeStyle=th.wallLine;ctx.lineWidth=2;ctx.strokeRect(wx,wy,w.w,w.h);
+      // Tree trunk look for narrow obstacles
+      if(w.w<=50&&w.h>w.w){
+        ctx.fillStyle='#2a5a14';
+        ctx.beginPath();ctx.ellipse(wx+w.w/2,wy+w.h/2,w.w*0.4,w.h*0.45,0,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle='rgba(100,200,50,0.12)';
+        ctx.beginPath();ctx.ellipse(wx+w.w/2,wy-8,w.w*0.9,w.w*0.9,0,0,Math.PI*2);ctx.fill();
+      }
+      ctx.fillStyle=th.wallTop;ctx.fillRect(wx,wy,w.w,4);
+
+    } else if(G.mapType==='arctic'){
+      // Ice blocks — gradient effect
+      const grad=ctx.createLinearGradient(wx,wy,wx+w.w,wy+w.h);
+      grad.addColorStop(0,'#5a9ab8');grad.addColorStop(1,'#7abcd8');
+      ctx.fillStyle=grad;ctx.fillRect(wx,wy,w.w,w.h);
+      ctx.strokeStyle=th.wallLine;ctx.lineWidth=2;ctx.strokeRect(wx,wy,w.w,w.h);
+      // Ice crack lines
+      ctx.strokeStyle='rgba(180,230,255,0.25)';ctx.lineWidth=1;
+      ctx.beginPath();ctx.moveTo(wx+w.w*0.2,wy);ctx.lineTo(wx+w.w*0.4,wy+w.h*0.5);ctx.lineTo(wx+w.w*0.25,wy+w.h);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(wx+w.w*0.7,wy);ctx.lineTo(wx+w.w*0.6,wy+w.h*0.4);ctx.stroke();
+      // Frost top
+      ctx.fillStyle='rgba(220,245,255,0.22)';ctx.fillRect(wx,wy,w.w,5);
+
+    } else {
+      // Volcano — dark rock with glow cracks
+      ctx.fillStyle=th.wallFill;ctx.fillRect(wx,wy,w.w,w.h);
+      ctx.strokeStyle=th.wallLine;ctx.lineWidth=2;ctx.strokeRect(wx,wy,w.w,w.h);
+      // Lava cracks glow
+      ctx.save();
+      ctx.shadowColor='#ff4400';ctx.shadowBlur=6;
+      ctx.strokeStyle='rgba(255,80,0,0.35)';ctx.lineWidth=1;
+      ctx.beginPath();ctx.moveTo(wx+w.w*0.3,wy+w.h*0.1);ctx.lineTo(wx+w.w*0.5,wy+w.h*0.6);ctx.lineTo(wx+w.w*0.7,wy+w.h*0.8);ctx.stroke();
+      ctx.restore();
+      ctx.fillStyle=th.wallTop;ctx.fillRect(wx,wy,w.w,4);
+    }
   }
+
+  // Ambient particles (screen-space)
+  drawAmbient(now);
+}
+
+function drawDecorations(ox, oy, now, th){
+  ctx.save();
+  for(const d of G.decorations){
+    const px=d.x+ox, py=d.y+oy;
+    if(px<-120||px>canvas.width+120||py<-120||py>canvas.height+120) continue;
+    if(d.type==='leaf'){
+      ctx.globalAlpha=0.18+d.a*0.12;
+      ctx.fillStyle=d.a>0.5?'#2a6a12':'#3a8a1a';
+      ctx.beginPath();ctx.ellipse(px,py,d.r,d.r*0.5,d.a*Math.PI,0,Math.PI*2);ctx.fill();
+    } else if(d.type==='snow'){
+      ctx.globalAlpha=0.12+d.a*0.1;
+      ctx.fillStyle='#c8e8ff';
+      ctx.beginPath();ctx.ellipse(px,py,d.r,d.r*0.4,d.a*Math.PI*0.5,0,Math.PI*2);ctx.fill();
+    } else if(d.type==='lava'){
+      const pulse=Math.sin(now*0.002+d.a*Math.PI*2)*0.15;
+      ctx.globalAlpha=0.25+pulse;
+      ctx.fillStyle='#ff4400';
+      ctx.shadowColor='#ff4400';ctx.shadowBlur=12;
+      ctx.beginPath();ctx.ellipse(px,py,d.r,d.r*0.45,d.a*Math.PI,0,Math.PI*2);ctx.fill();
+      ctx.shadowBlur=0;
+    }
+  }
+  ctx.globalAlpha=1;
+  ctx.restore();
+}
+
+function drawAmbient(now){
+  if(G.mapType==='jungle'){
+    ctx.globalAlpha=0.35;
+    for(let i=0;i<20;i++){
+      const lx=(i*487+now*0.015*(0.5+(i%3)*0.25))%canvas.width;
+      const ly=(i*317+now*0.025*(0.3+(i%4)*0.2))%canvas.height;
+      ctx.fillStyle=i%3===0?'#4caf50':'#388e3c';
+      ctx.beginPath();ctx.ellipse(lx,ly,5,3,now*0.0008*(i%5),0,Math.PI*2);ctx.fill();
+    }
+  } else if(G.mapType==='arctic'){
+    ctx.globalAlpha=0.55;ctx.fillStyle='#ddeeff';
+    for(let i=0;i<50;i++){
+      const sx=(i*379+(i%7)*canvas.width/7)%canvas.width;
+      const sy=(i*211+now*0.04*(0.4+(i%5)*0.15))%canvas.height;
+      ctx.beginPath();ctx.arc(sx,sy,1+(i%3)*0.6,0,Math.PI*2);ctx.fill();
+    }
+  } else {
+    for(let i=0;i<22;i++){
+      const ex=(i*431+200)%canvas.width;
+      const ey=canvas.height-((i*313+now*0.07*(0.4+(i%4)*0.2))%canvas.height);
+      ctx.globalAlpha=0.5+Math.sin(now*0.003+i)*0.2;
+      ctx.fillStyle=i%2===0?'#ff6600':'#ff9900';
+      ctx.beginPath();ctx.arc(ex,ey,1.2+(i%3)*0.5,0,Math.PI*2);ctx.fill();
+    }
+  }
+  ctx.globalAlpha=1;
 }
 
 function drawDrops(){
@@ -998,21 +1230,14 @@ function drawCrosshair(){
 function drawMinimap(){
   const mm=mmCanvas;
   const s=mm.width/MAP_W;
-  mmCtx.fillStyle='rgba(0,0,0,0.8)';
+  const th=MAP_THEME[G.mapType];
+  mmCtx.fillStyle=th.mmFloor;
   mmCtx.fillRect(0,0,mm.width,mm.height);
-
-  mmCtx.fillStyle='#1a1a2e';
-  for(const w of G.walls){
-    mmCtx.fillRect(w.x*s,w.y*s,w.w*s,w.h*s);
-  }
-  for(const e of G.enemies){
-    mmCtx.fillStyle=e.color;
-    mmCtx.fillRect(e.x*s-1,e.y*s-1,3,3);
-  }
+  mmCtx.fillStyle=th.mmWall;
+  for(const w of G.walls) mmCtx.fillRect(w.x*s,w.y*s,Math.max(1,w.w*s),Math.max(1,w.h*s));
+  for(const e of G.enemies){ mmCtx.fillStyle=e.color; mmCtx.fillRect(e.x*s-1,e.y*s-1,3,3); }
   mmCtx.fillStyle='#2ec4b6';
-  mmCtx.beginPath();
-  mmCtx.arc(G.player.x*s,G.player.y*s,3,0,Math.PI*2);
-  mmCtx.fill();
+  mmCtx.beginPath();mmCtx.arc(G.player.x*s,G.player.y*s,3,0,Math.PI*2);mmCtx.fill();
 }
 
 // ─── HUD UPDATE ──────────────────────────────────────────────────
@@ -1107,7 +1332,8 @@ function gameOver(){
   o.innerHTML=`
     <div class="overlay-title" style="background:linear-gradient(135deg,#fff 30%,#e63946);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">GAME OVER</div>
     <div class="overlay-sub">WELLE ${G.wave} &nbsp;|&nbsp; SCORE: ${G.score.toLocaleString('de')} &nbsp;|&nbsp; KILLS: ${G.kills}</div>
-    <button class="overlay-btn" onclick="startGame()">NOCHMAL SPIELEN</button>
+    <button class="overlay-btn" onclick="startGame(G.mapType)">NOCHMAL SPIELEN</button>
+    <button class="overlay-btn sec" onclick="location.reload()">MAP WECHSELN</button>
     <button class="overlay-btn sec" onclick="location.href='index.html'">ZUM MENÜ</button>
   `;
   o.classList.remove('hidden');
@@ -1193,9 +1419,9 @@ function switchWeapon(id){
 }
 
 // ─── START ───────────────────────────────────────────────────────
-function startGame(){
+function startGame(mapType){
   document.getElementById('overlay').classList.add('hidden');
-  initState();
+  initState(mapType||'jungle');
   G.running=true;
   G.lastTime=performance.now();
   requestAnimationFrame(gameLoop);
