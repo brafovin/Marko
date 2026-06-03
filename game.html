@@ -76,6 +76,12 @@
       <div id="healthBar"><div id="healthFill" style="width:100%"></div></div>
       <div id="armorBar"><div id="armorFill" style="width:100%"></div></div>
       <div class="value" id="hpValue">100</div>
+      <div id="xp-row" style="margin-top:6px;display:flex;align-items:center;gap:8px;">
+        <span style="font-size:0.65rem;color:#ffd700;font-weight:700;letter-spacing:0.1em;" id="hud-level">LVL 1</span>
+        <div style="flex:1;height:4px;background:rgba(255,255,255,0.1);border-radius:2px;overflow:hidden;">
+          <div id="xp-bar" style="height:100%;width:0%;background:linear-gradient(90deg,#ffd700,#ff8c00);border-radius:2px;transition:width 0.3s;"></div>
+        </div>
+      </div>
     </div>
     <div class="hud-center">
       <div id="waveDisplay">WELLE 1</div>
@@ -184,6 +190,22 @@ const WEAPONS = [
   { id:5, name:'KANONE',  color:'#ffd700', damage:350, rate:2500, speed:6,  spread:0.00, ammo:4,    maxAmmo:4,   reloadTime:3500, burst:1, auto:false, unlockWave:3 },
 ];
 
+// ─── PERKS ───────────────────────────────────────────────────────
+const PERKS = [
+  { id:'dmg',      name:'SCHADEN+',      icon:'💥', desc:'×1.3 Schaden',         apply: p => p._dmgMult    *= 1.3 },
+  { id:'rate',     name:'FEUERRATE+',    icon:'⚡', desc:'×0.8 Schussintervall',  apply: p => p._rateMult   *= 0.8 },
+  { id:'reload',   name:'NACHLADEN+',    icon:'🔄', desc:'×0.75 Nachladezeit',    apply: p => p._reloadMult *= 0.75 },
+  { id:'speed',    name:'TEMPO+',        icon:'👟', desc:'×1.2 Bewegung',         apply: p => p._speedMult  *= 1.2 },
+  { id:'hp',       name:'LEBEN+',        icon:'❤️', desc:'+50 max HP',            apply: p => { p.maxHp += 50; p.hp = Math.min(p.hp+50, p.maxHp); } },
+  { id:'armor',    name:'RÜSTUNG+',      icon:'🛡️', desc:'+25 max Rüstung',       apply: p => { p.maxArmor += 25; p.armor = Math.min(p.armor+25, p.maxArmor); } },
+  { id:'spread',   name:'PRÄZISION+',    icon:'🎯', desc:'×0.7 Streuung',         apply: p => p._spreadMult *= 0.7 },
+  { id:'regen',    name:'REGENERATION',  icon:'💊', desc:'+2 HP/s',               apply: p => p._regen     += 2 },
+  { id:'vamp',     name:'VAMPIR',        icon:'🧛', desc:'+5 HP pro Kill',        apply: p => p._vamp      += 5 },
+  { id:'multishot',name:'MEHRFACHSCHUSS',icon:'🔱', desc:'+1 extra Kugel',        apply: p => p._multishot += 1 },
+  { id:'dmg2',     name:'SCHADEN++',     icon:'💢', desc:'×1.5 Schaden',         apply: p => p._dmgMult    *= 1.5 },
+  { id:'shield',   name:'SCHILD',        icon:'⚔️', desc:'+40 Rüstung sofort',    apply: p => { p.armor = Math.min(p.armor+40, p.maxArmor); } },
+];
+
 // ─── ENEMY TYPES ─────────────────────────────────────────────────
 const ENEMY_TYPES = [
   { type:'grunt',   hp:60,  speed:1.2, size:14, color:'#e63946', score:10,  damage:8,  atk:800  },
@@ -230,11 +252,20 @@ function initState(mapType) {
       invincible: 0,
       dash: 0,
       dashCooldown: 0,
+      activePerks: [],
+      _dmgMult:1, _rateMult:1, _reloadMult:1, _spreadMult:1, _speedMult:1,
+      _regen:0, _vamp:0, _multishot:1, _armor:0,
     },
     nextEnemyId: 0,
     nextBulletId: 0,
     shake: 0,
     hitFlash: 0,
+    level: 1,
+    xp: 0,
+    xpToNext: 100,
+    activePerks: [],
+    pendingLevelUp: false,
+    levelFlash: 0,
   };
   generateMap();
 }
@@ -517,7 +548,12 @@ function resolveCircleRect(obj,r,walls){
 function updatePlayer(dt) {
   const p = G.player;
   const sprint = G.keys['ShiftLeft'] || G.keys['ShiftRight'];
-  const spd = p.speed * (sprint ? 1.7 : 1);
+  const spd = p.speed * p._speedMult * (sprint ? 1.7 : 1);
+
+  // Regen
+  if (p._regen > 0) {
+    p.hp = Math.min(p.hp + p._regen * dt / 1000, p.maxHp);
+  }
 
   let dx = 0, dy = 0;
   if(G.keys['KeyW']||G.keys['ArrowUp'])    dy=-1;
@@ -550,7 +586,9 @@ function updatePlayer(dt) {
   // Shooting
   const w = G.player.weapons[p.weapon];
   const now = performance.now();
-  const canShoot = G.mouseDown && !w.reloading && w.ammo!==0 && (now-p.lastShot)>=w.rate;
+  const effectiveRate = w.rate * p._rateMult;
+  const effectiveReloadTime = w.reloadTime * p._reloadMult;
+  const canShoot = G.mouseDown && !w.reloading && w.ammo!==0 && (now-p.lastShot)>=effectiveRate;
   if(canShoot && (w.auto || G.mouseJustDown)){
     shoot(p, w, now);
     G.mouseJustDown=false;
@@ -558,7 +596,7 @@ function updatePlayer(dt) {
 
   // Auto reload
   if(w.ammo===0 && !w.reloading) startReload(w, now);
-  if(w.reloading && now-w.reloadStart>=w.reloadTime){
+  if(w.reloading && now-w.reloadStart>=effectiveReloadTime){
     w.ammo=w.maxAmmo;
     w.reloading=false;
   }
@@ -569,16 +607,21 @@ function shoot(p, w, now) {
   const wy = G.my - canvas.height/2 + G.camera.y;
   const baseAngle = Math.atan2(wy - p.y, wx - p.x);
   p.lastShot = now;
+  const effectiveSpread = w.spread * p._spreadMult;
+  const effectiveDamage = w.damage * p._dmgMult;
 
-  for(let b=0;b<w.burst;b++){
-    const angle = baseAngle + (Math.random()-0.5)*w.spread*2;
+  const totalShots = w.burst * p._multishot;
+  for(let b=0;b<totalShots;b++){
+    // For multishot extras, offset the angle slightly
+    const multishotOffset = p._multishot > 1 ? ((b % p._multishot) - (p._multishot-1)/2) * 0.08 : 0;
+    const angle = baseAngle + (Math.random()-0.5)*effectiveSpread*2 + multishotOffset;
     const isExplosive = w.name==='RPG' || w.name==='KANONE';
     G.bullets.push({
       id: G.nextBulletId++,
       x:p.x, y:p.y,
       vx:Math.cos(angle)*w.speed,
       vy:Math.sin(angle)*w.speed,
-      damage:w.damage,
+      damage:effectiveDamage,
       color:w.color,
       fromPlayer:true,
       life:1800,
@@ -732,6 +775,8 @@ function damageEnemy(e,dmg,idx){
     addParticles(e.x,e.y,'#fff',5,7);
     addParticles(e.x,e.y,'#ffcc44',6,4);
     if(Math.random()<0.3) dropItem(e.x,e.y);
+    gainXP(e.score);
+    if(G.player._vamp > 0) G.player.hp = Math.min(G.player.hp + G.player._vamp, G.player.maxHp);
     G.enemies.splice(idx,1);
     checkWaveComplete();
   }
@@ -1555,6 +1600,11 @@ function updateHUD(){
   else if(w.reloading) ammoEl.innerHTML='<span style="color:#f4a261">NACHLADEN...</span>';
   else ammoEl.innerHTML=w.ammo+'<span>/'+w.maxAmmo+'</span>';
 
+  // XP / Level
+  document.getElementById('hud-level').textContent = `LVL ${G.level}`;
+  const xpPct = G.xp / G.xpToNext * 100;
+  document.getElementById('xp-bar').style.width = xpPct + '%';
+
   // Weapon bar
   for(let i=0;i<6;i++){
     const slot=document.getElementById('ws'+i);
@@ -1588,6 +1638,12 @@ function drawVignette(){
     ctx.fillStyle='#ff2222';ctx.fillRect(0,0,canvas.width,canvas.height);
     ctx.globalAlpha=1;
   }
+
+  // Level-up flash (gold)
+  if(G.levelFlash>0){
+    ctx.fillStyle=`rgba(255,215,0,${G.levelFlash*0.35})`;
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+  }
 }
 
 // ─── SCORE POPUP ─────────────────────────────────────────────────
@@ -1610,9 +1666,52 @@ function showWaveAnnounce(text){
   el._t=setTimeout(()=>el.style.opacity='0',2000);
 }
 
+// ─── XP / LEVEL SYSTEM ──────────────────────────────────────────
+function gainXP(amount) {
+  G.xp += amount;
+  while (G.xp >= G.xpToNext) {
+    G.xp -= G.xpToNext;
+    G.level++;
+    G.xpToNext = Math.floor(80 * Math.pow(1.35, G.level - 1));
+    triggerLevelUp();
+  }
+  updateHUD();
+}
+
+function triggerLevelUp() {
+  const shuffled = [...PERKS].sort(() => Math.random() - 0.5);
+  showPerkOverlay(shuffled.slice(0, 3));
+}
+
+function showPerkOverlay(perks) {
+  const overlay = document.getElementById('level-up-overlay');
+  document.getElementById('level-up-num').textContent = `LEVEL ${G.level}`;
+  const container = document.getElementById('perk-cards');
+  container.innerHTML = '';
+  perks.forEach(perk => {
+    const card = document.createElement('div');
+    card.style.cssText = 'width:180px;background:#1a1a28;border:2px solid rgba(255,215,0,0.3);border-radius:12px;padding:28px 20px;text-align:center;cursor:pointer;transition:all 0.2s;';
+    card.innerHTML = `<div style="font-size:2.5rem;margin-bottom:12px;">${perk.icon}</div><div style="font-size:0.9rem;font-weight:900;color:#fff;letter-spacing:0.08em;margin-bottom:8px;">${perk.name}</div><div style="font-size:0.78rem;color:#aaa;">${perk.desc}</div>`;
+    card.onmouseenter = () => { card.style.borderColor='#ffd700'; card.style.transform='translateY(-4px)'; card.style.background='#24243a'; };
+    card.onmouseleave = () => { card.style.borderColor='rgba(255,215,0,0.3)'; card.style.transform=''; card.style.background='#1a1a28'; };
+    card.onclick = () => {
+      perk.apply(G.player);
+      G.player.activePerks.push(perk.id);
+      overlay.style.display = 'none';
+      G.paused = false;
+      G.levelFlash = 1.0;
+      requestAnimationFrame(gameLoop);
+    };
+    container.appendChild(card);
+  });
+  overlay.style.display = 'flex';
+  G.paused = true;
+}
+
 // ─── GAME LOOP ───────────────────────────────────────────────────
 function gameLoop(ts){
   if(!G.running) return;
+  if(G.paused) return;
   const dt=Math.min(ts-G.lastTime,50);
   G.lastTime=ts;
 
@@ -1635,6 +1734,7 @@ function gameLoop(ts){
   // Decay effects
   if(G.shake>0.3){ G.shake*=0.82; } else G.shake=0;
   if(G.hitFlash>0) G.hitFlash-=dt;
+  if(G.levelFlash>0) G.levelFlash-=0.03;
 
   // Draw
   ctx.clearRect(0,0,canvas.width,canvas.height);
@@ -1682,6 +1782,7 @@ function checkWaveComplete(){
     G.waveActive=false;
     G.score+=G.wave*50;
     showWaveAnnounce('WELLE ABGESCHLOSSEN! +'+G.wave*50);
+    gainXP(G.wave * 20);
     unlockWavesWeapons();
     // Wave 3: drop the cannon near the player
     if(G.wave===3){
@@ -1764,5 +1865,14 @@ const style=document.createElement('style');
 style.textContent=`@keyframes floatUp{0%{opacity:1;transform:translateX(-50%) translateY(0)}100%{opacity:0;transform:translateX(-50%) translateY(-40px)}}`;
 document.head.appendChild(style);
 </script>
+
+<div id="level-up-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.82);z-index:200;flex-direction:column;align-items:center;justify-content:center;gap:32px;">
+  <div style="text-align:center;">
+    <div id="level-up-title" style="font-size:2.5rem;font-weight:900;color:#ffd700;letter-spacing:0.15em;text-shadow:0 0 30px #ffd700;">LEVEL UP!</div>
+    <div id="level-up-num" style="font-size:1.1rem;color:#aaa;margin-top:8px;letter-spacing:0.1em;">LEVEL 2</div>
+    <div style="font-size:0.85rem;color:#888;margin-top:4px;">Wähle eine Verbesserung</div>
+  </div>
+  <div id="perk-cards" style="display:flex;gap:20px;flex-wrap:wrap;justify-content:center;"></div>
+</div>
 </body>
 </html>
