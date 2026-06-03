@@ -100,12 +100,12 @@ canvas.addEventListener('mousemove', function(e) {
   mouse.y = (e.clientY - r.top) * scaleY;
 });
 canvas.addEventListener('mousedown', function(e) {
-  if (e.button === 0) mouse.down = true;
-  if (e.button === 2) { mouse.rightDown = true; e.preventDefault(); }
+  if (e.button === 2) { mouse.down = true; e.preventDefault(); }
+  if (e.button === 0) mouse.rightDown = true;
 });
 canvas.addEventListener('mouseup', function(e) {
-  if (e.button === 0) mouse.down = false;
-  if (e.button === 2) mouse.rightDown = false;
+  if (e.button === 2) mouse.down = false;
+  if (e.button === 0) mouse.rightDown = false;
 });
 canvas.addEventListener('contextmenu', function(e) { e.preventDefault(); });
 document.addEventListener('keydown', function(e) {
