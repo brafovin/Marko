@@ -121,7 +121,7 @@ document.addEventListener('keyup', function(e) {
 // =============================================================
 // GAME STATE
 // =============================================================
-var STATE = { MENU: 0, PLAYING: 1, STAGE_CLEAR: 2, GAME_OVER: 3, VICTORY: 4, PAUSED: 5 };
+var STATE = { MENU: 0, PLAYING: 1, STAGE_CLEAR: 2, GAME_OVER: 3, VICTORY: 4, PAUSED: 5, MAP_SELECT: 6 };
 var gameState = STATE.MENU;
 var score = 0;
 var hiScore = 0;
@@ -1379,7 +1379,12 @@ function applyScreenShake() {
 // GAME MANAGEMENT
 // =============================================================
 function startNewGame() {
-  score = 0; stage = 1;
+  gameState = STATE.MAP_SELECT;
+  mouse.down = false;
+}
+
+function startFromMap(stageNum) {
+  score = 0; stage = stageNum;
   player.lives = 3; player.bombs = 3; player.weaponLevel = 1;
   resetPlayer();
   enemies = []; enemyBullets = []; playerBullets = [];
@@ -1389,8 +1394,10 @@ function startNewGame() {
   bombActive = false; bombCooldown = 0; laserActive = false; laserTimer = 0; laserCooldown = 0;
   spawnTimer = 0; wavesDone = false;
   stageAnnounceTimer = 120; bossAnnounceTimer = 0;
+  initStars(); initNebulae();
   buildStageWaves(stage);
   gameState = STATE.PLAYING;
+  mouse.down = false;
 }
 
 function nextStage() {
@@ -1440,6 +1447,102 @@ function drawMenu() {
     ctx.textAlign = 'right'; ctx.fillStyle = '#aaaaaa'; ctx.fillText(controls[i][1], W/2+160, H/2+150+i*22);
   }
   ctx.textAlign = 'center';
+}
+
+// =============================================================
+// MAP SELECT SCREEN
+// =============================================================
+var mapSelectHover = -1;
+
+var MAP_DESCS = {
+  1: { emoji: '🌌', diff: 'EASY',     diffColor: '#44ff88', desc: 'Drones only. Learn the basics.' },
+  2: { emoji: '🏙️', diff: 'MEDIUM',   diffColor: '#ffff44', desc: 'Ghosts & Bombers join the fight.' },
+  3: { emoji: '🌋', diff: 'HARD',     diffColor: '#ff8844', desc: 'Splitters erupt from the lava.' },
+  4: { emoji: '🌿', diff: 'VERY HARD',diffColor: '#ff4444', desc: 'Shielders guard the neon forest.' },
+  5: { emoji: '🕳️', diff: 'EXTREME',  diffColor: '#ff00ff', desc: 'All enemies. Maximum chaos.' },
+};
+
+function drawMapSelect() {
+  ctx.fillStyle = '#000010'; ctx.fillRect(0, 0, W, H);
+
+  glow('#00ffff', 20);
+  ctx.fillStyle = '#00ffff'; ctx.font = 'bold 22px Courier New'; ctx.textAlign = 'center';
+  ctx.fillText('SELECT MAP', W/2, 48);
+  noGlow();
+  ctx.fillStyle = '#446688'; ctx.font = '11px Courier New';
+  ctx.fillText('Click a map to start · ESC = back', W/2, 66);
+
+  var cardW = 200, cardH = 122, cols = 2;
+  var startX = W/2 - cardW - 10;
+  var startY = 85;
+  var pad = 10;
+
+  mapSelectHover = -1;
+  var mx2 = mouse.x, my2 = mouse.y;
+
+  var i, stg, m, def, cx, cy, isHover, borderCol, theme;
+  for (i = 0; i < 5; i++) {
+    stg = i + 1;
+    m = MAP_DESCS[stg];
+    def = MAP_THEMES[stg];
+
+    // 2 columns: i<2 → row0, i==2 → center row1, i>=3 → row1
+    var col, row;
+    if (i < 2)      { col = i;     row = 0; }
+    else if (i == 2){ col = 0.5;   row = 1; }
+    else             { col = i - 2; row = 2; }
+
+    cx = startX + col * (cardW + pad);
+    cy = startY + row * (cardH + pad);
+
+    isHover = mx2 >= cx && mx2 <= cx + cardW && my2 >= cy && my2 <= cy + cardH;
+    if (isHover) mapSelectHover = stg;
+
+    // Card background
+    ctx.fillStyle = isHover ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.03)';
+    ctx.strokeStyle = isHover ? def.accentColor : 'rgba(255,255,255,0.15)';
+    ctx.lineWidth = isHover ? 2 : 1;
+    ctx.fillRect(cx, cy, cardW, cardH);
+    ctx.strokeRect(cx, cy, cardW, cardH);
+
+    // Accent top bar
+    ctx.fillStyle = def.accentColor;
+    ctx.globalAlpha = isHover ? 0.5 : 0.25;
+    ctx.fillRect(cx, cy, cardW, 3);
+    ctx.globalAlpha = 1;
+
+    // Emoji
+    ctx.font = '28px serif'; ctx.textAlign = 'center';
+    ctx.fillText(m.emoji, cx + cardW/2, cy + 38);
+
+    // Stage + name
+    glow(def.accentColor, isHover ? 12 : 6);
+    ctx.fillStyle = def.accentColor; ctx.font = 'bold 10px Courier New';
+    ctx.fillText('STAGE ' + stg, cx + cardW/2, cy + 56);
+    ctx.fillStyle = '#ffffff'; ctx.font = 'bold 13px Courier New';
+    ctx.fillText(def.name, cx + cardW/2, cy + 72);
+    noGlow();
+
+    // Difficulty badge
+    ctx.fillStyle = m.diffColor; ctx.font = 'bold 9px Courier New';
+    ctx.fillText(m.diff, cx + cardW/2, cy + 88);
+
+    // Description
+    ctx.fillStyle = '#888888'; ctx.font = '9px Courier New';
+    ctx.fillText(m.desc, cx + cardW/2, cy + 105);
+
+    // Hover glow border
+    if (isHover) {
+      glow(def.accentColor, 20);
+      ctx.strokeStyle = def.accentColor; ctx.lineWidth = 2;
+      ctx.strokeRect(cx, cy, cardW, cardH);
+      noGlow();
+    }
+  }
+
+  // Back hint
+  ctx.fillStyle = '#334455'; ctx.font = '11px Courier New'; ctx.textAlign = 'center';
+  ctx.fillText('[ ESC ] back to menu', W/2, H - 15);
 }
 
 function drawPauseScreen() {
@@ -1515,6 +1618,17 @@ function gameLoop() {
     return;
   }
 
+  if (gameState === STATE.MAP_SELECT) {
+    updateStars();
+    drawBackground(); drawScanlines(); drawMapSelect();
+    ctx.restore();
+    if (mouse.down && mapSelectHover >= 1) {
+      startFromMap(mapSelectHover);
+    }
+    if (keys['Escape']) { keys['Escape'] = false; gameState = STATE.MENU; mouse.down = false; }
+    return;
+  }
+
   if (gameState === STATE.PLAYING) {
     updateStars(); updateParticles(); updateCombo();
     updateFloatingTexts(); updatePowerups();
@@ -1577,7 +1691,7 @@ function gameLoop() {
     drawBackground(); drawParticles(); drawScanlines(); drawGameOver();
     ctx.restore();
     if (gameOverTimer > 120 && (mouse.down || keys['Space'] || keys[' '])) {
-      mouse.down = false; gameState = STATE.MENU;
+      mouse.down = false; gameState = STATE.MAP_SELECT;
     }
     return;
   }
