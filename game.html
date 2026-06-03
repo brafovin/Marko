@@ -61,6 +61,9 @@
   .diff-mid{background:rgba(76,175,80,0.15);color:#4caf50;}
   .diff-hard{background:rgba(100,181,246,0.15);color:#64b5f6;}
   .diff-xhard{background:rgba(255,87,34,0.15);color:#ff5722;}
+  .diff-legend{background:rgba(180,120,255,0.15);color:#c084fc;}
+  .map-space h3{color:#a78bfa;}
+  .space-prev{background:radial-gradient(ellipse at 50% 50%,#1a0a40,#000008);}
 </style>
 </head>
 <body>
@@ -129,6 +132,14 @@
           <span class="map-diff diff-xhard">SEHR SCHWER</span>
         </div>
       </div>
+      <div class="map-card-s" style="border-color:rgba(167,139,250,0.3)" onclick="startGame('space')">
+        <div class="map-preview space-prev">🪐</div>
+        <div class="map-card-info map-space">
+          <h3>WELTALL</h3>
+          <p>Raumstation, Asteroidenfelder, Planeten im Hintergrund.</p>
+          <span class="map-diff diff-legend">LEGENDÄR</span>
+        </div>
+      </div>
     </div>
     <div class="controls-hint">
       <span>WASD</span> Bewegen &nbsp;|&nbsp; <span>Maus</span> Zielen &nbsp;|&nbsp; <span>Klick</span> Schießen<br>
@@ -160,6 +171,7 @@ const MAP_THEME = {
   jungle:  { floor:'#0b1a07', grid:'rgba(0,180,0,0.04)',    wallFill:'#1e4a10', wallLine:'#2d6e1a', wallTop:'rgba(100,200,50,0.1)',  wallGlow:'#3a8a20', mmFloor:'#0d220a', mmWall:'#2a5a12' },
   arctic:  { floor:'#08121e', grid:'rgba(140,210,255,0.04)', wallFill:'#5a9ab8', wallLine:'#90c8e8', wallTop:'rgba(200,235,255,0.2)', wallGlow:'#a0d8f8', mmFloor:'#0a1828', mmWall:'#4a8aaa' },
   volcano: { floor:'#140800', grid:'rgba(255,80,0,0.05)',   wallFill:'#1e1208', wallLine:'#2e1c0a', wallTop:'rgba(255,90,0,0.06)',   wallGlow:'#ff4400', mmFloor:'#1a0a00', mmWall:'#2a1a08' },
+  space:   { floor:'#000008', grid:'rgba(80,60,180,0.03)',  wallFill:'#1a1a30', wallLine:'#3a3a60', wallTop:'rgba(120,140,255,0.1)',  wallGlow:'#6060ff', mmFloor:'#000010', mmWall:'#2a2a50' },
 };
 
 // ─── WEAPONS CONFIG ──────────────────────────────────────────────
@@ -343,6 +355,65 @@ function buildVolcano() {
   );
   const rng = seededRand(13);
   for (let i=0;i<60;i++) G.decorations.push({type:'lava',x:rng()*MAP_W,y:rng()*MAP_H,r:15+rng()*50,a:rng()});
+}
+
+function buildSpace() {
+  G.walls.push(
+    // Central space station hub
+    {x:1380,y:860,w:440,h:280},
+    {x:1200,y:960,w:180,h:80},{x:1820,y:960,w:180,h:80},
+    {x:1480,y:680,w:240,h:180},{x:1480,y:1140,w:240,h:180},
+    // Station corridor arms
+    {x:480, y:980,w:720,h:60},{x:2000,y:980,w:720,h:60},
+    {x:1540,y:180,w:120,h:500},{x:1540,y:1320,w:120,h:500},
+    // Station side modules
+    {x:160, y:820,w:240,h:320},{x:2800,y:820,w:240,h:320},
+    {x:1380,y:60, w:440,h:160},{x:1380,y:1780,w:440,h:160},
+    // Asteroid cluster NW
+    {x:200,y:100,w:110,h:90},{x:330,y:75,w:70,h:130},
+    {x:170,y:220,w:90,h:75},{x:460,y:130,w:55,h:110},
+    {x:110,y:360,w:130,h:70},{x:350,y:280,w:65,h:90},
+    // Asteroid cluster NE
+    {x:2850,y:100,w:110,h:90},{x:2740,y:75,w:70,h:130},
+    {x:2960,y:220,w:90,h:75},{x:2640,y:130,w:55,h:110},
+    {x:3010,y:360,w:130,h:70},{x:2780,y:280,w:65,h:90},
+    // Asteroid cluster SW
+    {x:200,y:1810,w:110,h:90},{x:330,y:1795,w:70,h:115},
+    {x:150,y:1660,w:90,h:100},{x:460,y:1830,w:130,h:70},
+    {x:110,y:1520,w:65,h:120},
+    // Asteroid cluster SE
+    {x:2850,y:1810,w:110,h:90},{x:2740,y:1795,w:70,h:115},
+    {x:2960,y:1660,w:90,h:100},{x:2540,y:1830,w:130,h:70},
+    {x:3010,y:1520,w:65,h:120},
+    // Mid-field debris
+    {x:620,y:420,w:75,h:75},{x:720,y:620,w:55,h:95},{x:520,y:680,w:90,h:55},
+    {x:2480,y:420,w:75,h:75},{x:2390,y:620,w:55,h:95},{x:2570,y:680,w:90,h:55},
+    {x:620,y:1250,w:75,h:75},{x:720,y:1380,w:55,h:95},
+    {x:2480,y:1250,w:75,h:75},{x:2390,y:1380,w:55,h:95},
+    {x:920,y:200,w:100,h:70},{x:2180,y:200,w:100,h:70},
+    {x:920,y:1730,w:100,h:70},{x:2180,y:1730,w:100,h:70},
+    {x:950,y:700,w:60,h:110},{x:2160,y:700,w:60,h:110},
+    {x:950,y:1190,w:60,h:110},{x:2160,y:1190,w:60,h:110},
+  );
+
+  // Stars — two parallax layers
+  const rng = seededRand(55);
+  for(let i=0;i<180;i++) G.decorations.push({
+    type:'star', x:rng()*MAP_W, y:rng()*MAP_H,
+    r: rng()<0.85 ? 0.8+rng()*1.2 : 2+rng()*2.5,
+    a: rng(), bright: rng()<0.08, pax: 0.08+rng()*0.25,
+    col: rng()<0.7?'#ffffff': rng()<0.5?'#ffd8a8':'#a8d8ff',
+  });
+
+  // Planets (parallax ~0.1 — very far background)
+  G.decorations.push(
+    {type:'planet',wx:580, wy:380, r:115,c1:'#e8a84a',c2:'#b07820',ring:true, ringC:'#c09040',tilt:0.32,glow:null},
+    {type:'planet',wx:2720,wy:320, r:88, c1:'#4a88e8',c2:'#2850b0',ring:false,glow:'#2060c0'},
+    {type:'planet',wx:380, wy:1620,r:68, c1:'#d04848',c2:'#901818',ring:false,glow:null},
+    {type:'planet',wx:2820,wy:1540,r:58, c1:'#a050d0',c2:'#6020a0',ring:false,glow:'#8030b8'},
+    {type:'planet',wx:1600,wy:90,  r:52, c1:'#50d090',c2:'#208858',ring:true, ringC:'#30a070',tilt:0.28,glow:null},
+    {type:'planet',wx:1600,wy:1910,r:46, c1:'#e05080',c2:'#901030',ring:false,glow:'#c02050'},
+  );
 }
 
 function seededRand(seed) {
@@ -808,17 +879,44 @@ function drawMap(){
       // Frost top
       ctx.fillStyle='rgba(220,245,255,0.22)';ctx.fillRect(wx,wy,w.w,5);
 
-    } else {
-      // Volcano — dark rock with glow cracks
+    } else if(G.mapType==='volcano'){
       ctx.fillStyle=th.wallFill;ctx.fillRect(wx,wy,w.w,w.h);
       ctx.strokeStyle=th.wallLine;ctx.lineWidth=2;ctx.strokeRect(wx,wy,w.w,w.h);
-      // Lava cracks glow
       ctx.save();
       ctx.shadowColor='#ff4400';ctx.shadowBlur=6;
       ctx.strokeStyle='rgba(255,80,0,0.35)';ctx.lineWidth=1;
       ctx.beginPath();ctx.moveTo(wx+w.w*0.3,wy+w.h*0.1);ctx.lineTo(wx+w.w*0.5,wy+w.h*0.6);ctx.lineTo(wx+w.w*0.7,wy+w.h*0.8);ctx.stroke();
       ctx.restore();
       ctx.fillStyle=th.wallTop;ctx.fillRect(wx,wy,w.w,4);
+
+    } else {
+      // Space — station panel or asteroid
+      const isStation = w.w>=100 || w.h>=100;
+      if(isStation){
+        const grad=ctx.createLinearGradient(wx,wy,wx+w.w,wy+w.h);
+        grad.addColorStop(0,'#22223a');grad.addColorStop(0.5,'#2e2e50');grad.addColorStop(1,'#18182e');
+        ctx.fillStyle=grad;ctx.fillRect(wx,wy,w.w,w.h);
+        ctx.strokeStyle='#4a4a80';ctx.lineWidth=2;ctx.strokeRect(wx,wy,w.w,w.h);
+        // Panel grid lines
+        ctx.strokeStyle='rgba(120,130,220,0.18)';ctx.lineWidth=1;
+        const step=28;
+        if(w.w>w.h){ for(let px=wx+step;px<wx+w.w-4;px+=step){ctx.beginPath();ctx.moveTo(px,wy);ctx.lineTo(px,wy+w.h);ctx.stroke();} }
+        else        { for(let py=wy+step;py<wy+w.h-4;py+=step){ctx.beginPath();ctx.moveTo(wx,py);ctx.lineTo(wx+w.w,py);ctx.stroke();} }
+        // Blue light strip
+        ctx.fillStyle='rgba(100,140,255,0.15)';ctx.fillRect(wx,wy,w.w,4);
+        ctx.fillStyle='rgba(100,140,255,0.08)';ctx.fillRect(wx,wy+w.h-4,w.w,4);
+        // Occasional orange warning light
+        ctx.fillStyle='rgba(255,140,0,0.2)';
+        ctx.fillRect(wx+w.w-8,wy+4,6,6);
+      } else {
+        // Asteroid — rocky dark
+        ctx.fillStyle='#18160e';ctx.fillRect(wx,wy,w.w,w.h);
+        ctx.strokeStyle='#28241a';ctx.lineWidth=2;ctx.strokeRect(wx,wy,w.w,w.h);
+        ctx.fillStyle='rgba(0,0,0,0.35)';
+        ctx.beginPath();ctx.arc(wx+w.w*0.3,wy+w.h*0.35,Math.min(w.w,w.h)*0.18,0,Math.PI*2);ctx.fill();
+        ctx.beginPath();ctx.arc(wx+w.w*0.65,wy+w.h*0.6,Math.min(w.w,w.h)*0.12,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle='rgba(255,255,255,0.04)';ctx.fillRect(wx,wy,w.w,2);
+      }
     }
   }
 
@@ -828,6 +926,39 @@ function drawMap(){
 
 function drawDecorations(ox, oy, now, th){
   ctx.save();
+
+  // Planets first (very slow parallax, behind everything)
+  for(const d of G.decorations){
+    if(d.type!=='planet') continue;
+    const ppx = canvas.width/2  + (d.wx - G.camera.x)*0.10;
+    const ppy = canvas.height/2 + (d.wy - G.camera.y)*0.10;
+    if(ppx<-d.r*2||ppx>canvas.width+d.r*2||ppy<-d.r*2||ppy>canvas.height+d.r*2) continue;
+    drawPlanet(ppx, ppy, d, now);
+  }
+
+  // Stars (medium parallax)
+  for(const d of G.decorations){
+    if(d.type!=='star') continue;
+    const spx = canvas.width/2  + (d.x - G.camera.x)*d.pax;
+    const spy = canvas.height/2 + (d.y - G.camera.y)*d.pax;
+    if(spx<-8||spx>canvas.width+8||spy<-8||spy>canvas.height+8) continue;
+    const twinkle = 0.45+Math.sin(now*0.0025+d.a*9.4)*0.4;
+    ctx.globalAlpha = twinkle*(d.bright?1:0.65);
+    ctx.fillStyle = d.col||'#ffffff';
+    ctx.beginPath();ctx.arc(spx,spy,d.r,0,Math.PI*2);ctx.fill();
+    if(d.bright){
+      ctx.globalAlpha=twinkle*0.25;
+      ctx.fillStyle='#ffffcc';
+      ctx.beginPath();ctx.arc(spx,spy,d.r*3.5,0,Math.PI*2);ctx.fill();
+      // Cross flare
+      ctx.globalAlpha=twinkle*0.15;
+      ctx.strokeStyle='#ffffff';ctx.lineWidth=0.8;
+      ctx.beginPath();ctx.moveTo(spx-d.r*6,spy);ctx.lineTo(spx+d.r*6,spy);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(spx,spy-d.r*6);ctx.lineTo(spx,spy+d.r*6);ctx.stroke();
+    }
+  }
+
+  // Ground-level decorations (normal parallax via ox/oy)
   for(const d of G.decorations){
     const px=d.x+ox, py=d.y+oy;
     if(px<-120||px>canvas.width+120||py<-120||py>canvas.height+120) continue;
@@ -852,6 +983,65 @@ function drawDecorations(ox, oy, now, th){
   ctx.restore();
 }
 
+function drawPlanet(px, py, d, now) {
+  const r=d.r;
+  // Atmosphere / glow halo
+  if(d.glow){
+    const halo=ctx.createRadialGradient(px,py,r*0.8,px,py,r*1.5);
+    halo.addColorStop(0,d.glow+'55');halo.addColorStop(1,'transparent');
+    ctx.globalAlpha=0.7;
+    ctx.fillStyle=halo;
+    ctx.beginPath();ctx.arc(px,py,r*1.5,0,Math.PI*2);ctx.fill();
+  }
+  // Planet body gradient
+  const grad=ctx.createRadialGradient(px-r*0.32,py-r*0.32,r*0.06,px,py,r);
+  grad.addColorStop(0,d.c1);grad.addColorStop(0.65,d.c2);grad.addColorStop(1,'#000000');
+  ctx.globalAlpha=0.92;
+  ctx.beginPath();ctx.arc(px,py,r,0,Math.PI*2);
+  ctx.fillStyle=grad;ctx.fill();
+  // Surface bands
+  ctx.save();
+  ctx.beginPath();ctx.arc(px,py,r,0,Math.PI*2);ctx.clip();
+  ctx.globalAlpha=0.12;
+  for(let b=0;b<5;b++){
+    ctx.fillStyle=b%2===0?'#ffffff':'#000000';
+    ctx.fillRect(px-r,py-r*0.9+b*(r*0.38),r*2,r*0.2);
+  }
+  // Slow rotation feature (spot/storm)
+  const rot=now*0.00006;
+  ctx.globalAlpha=0.18;
+  ctx.fillStyle=d.c1;
+  ctx.beginPath();ctx.ellipse(px+Math.cos(rot)*r*0.35,py+Math.sin(rot)*r*0.2,r*0.22,r*0.14,rot,0,Math.PI*2);ctx.fill();
+  ctx.restore();
+  // Atmosphere rim
+  const rim=ctx.createRadialGradient(px,py,r*0.88,px,py,r*1.08);
+  rim.addColorStop(0,'transparent');rim.addColorStop(1,d.c1+'44');
+  ctx.globalAlpha=0.8;
+  ctx.fillStyle=rim;ctx.beginPath();ctx.arc(px,py,r*1.08,0,Math.PI*2);ctx.fill();
+  // Ring system
+  if(d.ring){
+    ctx.save();ctx.translate(px,py);
+    // Back half of ring (behind planet)
+    ctx.scale(1,d.tilt);
+    ctx.strokeStyle=d.ringC;ctx.lineWidth=r*0.28;ctx.globalAlpha=0.55;
+    ctx.beginPath();ctx.arc(0,0,r*1.72,Math.PI,0,true);ctx.stroke();
+    ctx.lineWidth=r*0.1;ctx.strokeStyle=d.ringC+'88';ctx.globalAlpha=0.35;
+    ctx.beginPath();ctx.arc(0,0,r*2.0,Math.PI,0,true);ctx.stroke();
+    // Redraw planet body over back ring
+    ctx.scale(1,1/d.tilt);
+    ctx.globalAlpha=0.92;
+    ctx.beginPath();ctx.arc(0,0,r,0,Math.PI*2);ctx.fillStyle=grad;ctx.fill();
+    // Front half of ring
+    ctx.scale(1,d.tilt);
+    ctx.strokeStyle=d.ringC;ctx.lineWidth=r*0.28;ctx.globalAlpha=0.72;
+    ctx.beginPath();ctx.arc(0,0,r*1.72,0,Math.PI,false);ctx.stroke();
+    ctx.lineWidth=r*0.1;ctx.strokeStyle=d.ringC+'aa';ctx.globalAlpha=0.45;
+    ctx.beginPath();ctx.arc(0,0,r*2.0,0,Math.PI,false);ctx.stroke();
+    ctx.restore();
+  }
+  ctx.globalAlpha=1;
+}
+
 function drawAmbient(now){
   if(G.mapType==='jungle'){
     ctx.globalAlpha=0.35;
@@ -868,13 +1058,34 @@ function drawAmbient(now){
       const sy=(i*211+now*0.04*(0.4+(i%5)*0.15))%canvas.height;
       ctx.beginPath();ctx.arc(sx,sy,1+(i%3)*0.6,0,Math.PI*2);ctx.fill();
     }
-  } else {
+  } else if(G.mapType==='volcano'){
     for(let i=0;i<22;i++){
       const ex=(i*431+200)%canvas.width;
       const ey=canvas.height-((i*313+now*0.07*(0.4+(i%4)*0.2))%canvas.height);
       ctx.globalAlpha=0.5+Math.sin(now*0.003+i)*0.2;
       ctx.fillStyle=i%2===0?'#ff6600':'#ff9900';
       ctx.beginPath();ctx.arc(ex,ey,1.2+(i%3)*0.5,0,Math.PI*2);ctx.fill();
+    }
+  } else {
+    // Space: drifting nebula wisps + occasional shooting star
+    for(let i=0;i<8;i++){
+      const nx=(i*317+now*0.004*(0.2+(i%3)*0.1))%canvas.width;
+      const ny=(i*211+now*0.003*(0.1+(i%4)*0.08))%canvas.height;
+      ctx.globalAlpha=0.04+Math.sin(now*0.001+i)*0.02;
+      const nebCol=['rgba(80,0,180,1)','rgba(0,60,160,1)','rgba(140,0,100,1)'][i%3];
+      const ng=ctx.createRadialGradient(nx,ny,0,nx,ny,120+i*20);
+      ng.addColorStop(0,nebCol);ng.addColorStop(1,'transparent');
+      ctx.fillStyle=ng;ctx.beginPath();ctx.arc(nx,ny,140+i*20,0,Math.PI*2);ctx.fill();
+    }
+    // Shooting star
+    const period=7000;
+    const t=((now+1234)%period)/period;
+    if(t<0.04){
+      const prog=t/0.04;
+      ctx.globalAlpha=(1-prog)*0.9;
+      ctx.strokeStyle='#ffffff';ctx.lineWidth=1.5;
+      const sx=canvas.width*0.7-prog*300, sy=canvas.height*0.15+prog*80;
+      ctx.beginPath();ctx.moveTo(sx,sy);ctx.lineTo(sx+60*(1-prog),sy-20*(1-prog));ctx.stroke();
     }
   }
   ctx.globalAlpha=1;
