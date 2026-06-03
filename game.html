@@ -75,6 +75,7 @@
     <div class="weapon-slot locked" id="ws2">3 SHOTGUN</div>
     <div class="weapon-slot locked" id="ws3">4 SNIPER</div>
     <div class="weapon-slot locked" id="ws4">5 RPG</div>
+    <div class="weapon-slot locked" id="ws5">6 KANONE</div>
   </div>
 
   <div id="minimap"><canvas id="minimapCanvas" width="120" height="120"></canvas></div>
@@ -118,6 +119,7 @@ const WEAPONS = [
   { id:2, name:'SHOTGUN',  color:'#e63946', damage:18,  rate:700,  speed:13, spread:0.25, ammo:8,    maxAmmo:8,   reloadTime:2000, burst:6, auto:false, unlockWave:3 },
   { id:3, name:'SNIPER',   color:'#2ec4b6', damage:120, rate:1200, speed:22, spread:0.01, ammo:5,    maxAmmo:5,   reloadTime:2500, burst:1, auto:false, unlockWave:4 },
   { id:4, name:'RPG',      color:'#ff6b35', damage:200, rate:2000, speed:8,  spread:0.00, ammo:3,    maxAmmo:3,   reloadTime:3000, burst:1, auto:false, unlockWave:6 },
+  { id:5, name:'KANONE',  color:'#ffd700', damage:350, rate:2500, speed:6,  spread:0.00, ammo:4,    maxAmmo:4,   reloadTime:3500, burst:1, auto:false, unlockWave:3 },
 ];
 
 // ─── ENEMY TYPES ─────────────────────────────────────────────────
@@ -327,7 +329,7 @@ function shoot(p, w, now) {
 
   for(let b=0;b<w.burst;b++){
     const angle = baseAngle + (Math.random()-0.5)*w.spread*2;
-    const isExplosive = w.name==='RPG';
+    const isExplosive = w.name==='RPG' || w.name==='KANONE';
     G.bullets.push({
       id: G.nextBulletId++,
       x:p.x, y:p.y,
@@ -336,9 +338,10 @@ function shoot(p, w, now) {
       damage:w.damage,
       color:w.color,
       fromPlayer:true,
-      life:1200,
-      size: w.name==='RPG'?6:w.name==='SNIPER'?3:2,
+      life:1800,
+      size: w.name==='KANONE'?10:w.name==='RPG'?6:w.name==='SNIPER'?3:2,
       explosive:isExplosive,
+      explodeRadius: w.name==='KANONE'?160:120,
       trail:[],
     });
   }
@@ -429,7 +432,7 @@ function updateBullets(dt) {
       }
     }
     if(wallHit||b.life<=0||b.x<0||b.x>MAP_W||b.y<0||b.y>MAP_H){
-      if(b.explosive) explode(b.x,b.y,120,b.damage);
+      if(b.explosive) explode(b.x,b.y,b.explodeRadius||120,b.damage);
       else addParticles(b.x,b.y,b.color,4,2);
       G.bullets.splice(i,1); continue;
     }
@@ -438,7 +441,7 @@ function updateBullets(dt) {
       for(let j=G.enemies.length-1;j>=0;j--){
         const e=G.enemies[j];
         if(dist(b.x,b.y,e.x,e.y)<e.size+b.size){
-          if(b.explosive) explode(b.x,b.y,120,b.damage);
+          if(b.explosive) explode(b.x,b.y,b.explodeRadius||120,b.damage);
           else damageEnemy(e,b.damage,j);
           addParticles(b.x,b.y,b.color,6,3);
           G.bullets.splice(i,1); break;
@@ -505,6 +508,10 @@ function dropItem(x,y){
   G.drops.push({x,y,type:t,life:8000,pulse:0});
 }
 
+function dropCannon(x,y){
+  G.drops.push({x,y,type:'cannon',life:30000,pulse:0});
+}
+
 function updateDrops(dt){
   const now=performance.now();
   for(let i=G.drops.length-1;i>=0;i--){
@@ -526,9 +533,19 @@ function pickupDrop(d){
   else if(d.type==='ammo'){
     const w=p.weapons[p.weapon];
     if(w.maxAmmo>0) w.ammo=w.maxAmmo;
+  } else if(d.type==='cannon'){
+    const wDef=WEAPONS[5];
+    if(!p.weapons.find(pw=>pw.id===5)){
+      p.weapons.push({...wDef, ammo:wDef.maxAmmo, reloading:false, reloadStart:0});
+      showWaveAnnounce('💣 KANONE ERHALTEN!');
+    } else {
+      // Already have it — refill ammo
+      p.weapons.find(pw=>pw.id===5).ammo=wDef.maxAmmo;
+      showWaveAnnounce('💣 KANONENKUGELN NACHGELADEN!');
+    }
   } else if(d.type==='weapon'){
     const wave=G.wave;
-    const unlocked=WEAPONS.filter(w=>w.unlockWave<=wave && !p.weapons.find(pw=>pw.id===w.id));
+    const unlocked=WEAPONS.filter(w=>w.unlockWave<=wave && w.id!==5 && !p.weapons.find(pw=>pw.id===w.id));
     if(unlocked.length>0){
       const wDef=unlocked[Math.floor(Math.random()*unlocked.length)];
       p.weapons.push({...wDef, ammo:wDef.maxAmmo, reloading:false, reloadStart:0});
@@ -634,8 +651,8 @@ function drawMap(){
 function drawDrops(){
   const c=G.camera;
   const ox=canvas.width/2-c.x, oy=canvas.height/2-c.y;
-  const colors={health:'#e63946',ammo:'#f4a261',armor:'#2ec4b6',weapon:'#a8dadc'};
-  const icons={health:'❤',ammo:'🔸',armor:'🛡',weapon:'⚡'};
+  const colors={health:'#e63946',ammo:'#f4a261',armor:'#2ec4b6',weapon:'#a8dadc',cannon:'#ffd700'};
+  const icons={health:'❤',ammo:'🔸',armor:'🛡',weapon:'⚡',cannon:'💣'};
 
   for(const d of G.drops){
     const px=d.x+ox, py=d.y+oy;
@@ -651,10 +668,27 @@ function drawDrops(){
     ctx.lineWidth=2;
     ctx.stroke();
     ctx.restore();
+    // Extra glow ring for cannon drop
+    if(d.type==='cannon'){
+      ctx.save();
+      ctx.strokeStyle='#ffd700';
+      ctx.lineWidth=2;
+      ctx.globalAlpha=0.4+Math.sin(d.pulse*2)*0.3;
+      ctx.beginPath();
+      ctx.arc(px,py,18+pulse,0,Math.PI*2);
+      ctx.stroke();
+      ctx.globalAlpha=1;
+      ctx.restore();
+    }
     ctx.font='12px serif';
     ctx.textAlign='center';
     ctx.textBaseline='middle';
     ctx.fillText(icons[d.type],px,py);
+    if(d.type==='cannon'){
+      ctx.font='bold 9px Segoe UI';
+      ctx.fillStyle='#ffd700';
+      ctx.fillText('KANONE',px,py+18);
+    }
   }
 }
 
@@ -705,11 +739,23 @@ function drawBullets(){
     ctx.globalAlpha=1;
     ctx.save();
     ctx.shadowColor=b.color;
-    ctx.shadowBlur=8;
+    ctx.shadowBlur=b.size>6?24:8;
     ctx.fillStyle=b.color;
     ctx.beginPath();
     ctx.arc(b.x+ox,b.y+oy,b.size,0,Math.PI*2);
     ctx.fill();
+    // Cannon ball: dark core + gold ring
+    if(b.size>=10){
+      ctx.fillStyle='#333';
+      ctx.beginPath();
+      ctx.arc(b.x+ox,b.y+oy,b.size*0.5,0,Math.PI*2);
+      ctx.fill();
+      ctx.strokeStyle='#ffd700';
+      ctx.lineWidth=2;
+      ctx.beginPath();
+      ctx.arc(b.x+ox,b.y+oy,b.size,0,Math.PI*2);
+      ctx.stroke();
+    }
     ctx.restore();
   }
 }
@@ -878,12 +924,13 @@ function updateHUD(){
   else ammoEl.innerHTML=w.ammo+'<span>/'+w.maxAmmo+'</span>';
 
   // Weapon bar
-  for(let i=0;i<5;i++){
+  for(let i=0;i<6;i++){
     const slot=document.getElementById('ws'+i);
     const wDef=WEAPONS[i];
     const owned=p.weapons.find(pw=>pw.id===i);
-    slot.className='weapon-slot'+(owned?(i===p.weapon?' active':''):(wDef.unlockWave<=G.wave?' ':' locked'));
-    if(owned && i===p.weapon) slot.classList.add('active');
+    const isActive=owned && p.weapons.indexOf(owned)===p.weapon;
+    slot.className='weapon-slot'+(owned?(isActive?' active':''):(wDef.unlockWave<=G.wave?' ':' locked'));
+    if(i===5 && owned) slot.style.borderColor='#ffd700'; else if(i!==5) slot.style.borderColor='';
   }
 }
 
@@ -969,6 +1016,13 @@ function checkWaveComplete(){
     G.score+=G.wave*50;
     showWaveAnnounce('WELLE ABGESCHLOSSEN! +'+G.wave*50);
     unlockWavesWeapons();
+    // Wave 3: drop the cannon near the player
+    if(G.wave===3){
+      setTimeout(()=>{
+        dropCannon(G.player.x + 60, G.player.y);
+        showWaveAnnounce('💣 KANONE IN DER NÄHE!');
+      }, 1500);
+    }
     setTimeout(nextWave, G.waveDelay);
   }
 }
@@ -983,6 +1037,7 @@ window.addEventListener('keydown',e=>{
   if(e.code==='Digit3') switchWeapon(2);
   if(e.code==='Digit4') switchWeapon(3);
   if(e.code==='Digit5') switchWeapon(4);
+  if(e.code==='Digit6') switchWeapon(5);
   // Reload
   if(e.code==='KeyR'){
     const w=G.player.weapons[G.player.weapon];
