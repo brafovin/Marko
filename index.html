@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VOIDSTRIKE – Der ultimative Shooter</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav class="navbar">
+    <div class="nav-logo">VOID<span>STRIKE</span></div>
+    <ul class="nav-links">
+      <li><a href="#home">Home</a></li>
+      <li><a href="#features">Features</a></li>
+      <li><a href="#maps">Maps</a></li>
+      <li><a href="#weapons">Waffen</a></li>
+      <li><a href="#trailer">Trailer</a></li>
+    </ul>
+    <a href="#download" class="nav-cta">Jetzt spielen</a>
+    <button class="hamburger" id="hamburger">&#9776;</button>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero" id="home">
+    <div class="hero-bg">
+      <div class="particle" style="--x:10%;--y:20%;--s:0.6;--d:4s"></div>
+      <div class="particle" style="--x:30%;--y:70%;--s:0.4;--d:6s"></div>
+      <div class="particle" style="--x:60%;--y:40%;--s:0.8;--d:3s"></div>
+      <div class="particle" style="--x:80%;--y:80%;--s:0.5;--d:5s"></div>
+      <div class="particle" style="--x:50%;--y:10%;--s:0.7;--d:7s"></div>
+    </div>
+    <div class="hero-content">
+      <p class="hero-label">EARLY ACCESS 2025</p>
+      <h1 class="hero-title">VOIDSTRIKE</h1>
+      <p class="hero-sub">Der kompetitive Taktik-Shooter, der die Grenzen des Genres neu definiert.</p>
+      <div class="hero-buttons">
+        <a href="#download" class="btn btn-primary">Kostenlos spielen</a>
+        <a href="#trailer" class="btn btn-secondary">&#9654; Trailer ansehen</a>
+      </div>
+      <div class="hero-stats">
+        <div class="stat"><span class="stat-num">2.4M+</span><span class="stat-label">Spieler</span></div>
+        <div class="stat"><span class="stat-num">4.8★</span><span class="stat-label">Bewertung</span></div>
+        <div class="stat"><span class="stat-num">60</span><span class="stat-label">Maps</span></div>
+      </div>
+    </div>
+    <div class="hero-scroll">&#8595; Entdecke mehr</div>
+  </section>
+
+  <!-- FEATURES -->
+  <section class="features" id="features">
+    <div class="container">
+      <h2 class="section-title">Warum <span>VOIDSTRIKE</span>?</h2>
+      <p class="section-sub">Entwickelt von Veteranen der FPS-Szene – für Spieler, die Präzision lieben.</p>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">🎯</div>
+          <h3>Präzisions-Engine</h3>
+          <p>Unser proprietäres Recoil-System mit echtbasierter Physik – jede Waffe fühlt sich einzigartig an.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">⚡</div>
+          <h3>128-Tick Server</h3>
+          <p>Niedrige Latenz, maximale Fairness. Unsere Server laufen auf 128 Tick für wettkampfgerechtes Gameplay.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🛡️</div>
+          <h3>Anti-Cheat KI</h3>
+          <p>Unsere KI-gestützte Anti-Cheat-Lösung erkennt Cheater in Echtzeit und schützt deine Matches.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🌍</div>
+          <h3>Cross-Play</h3>
+          <p>Spiele mit Freunden auf PC, Konsole und Mobile – plattformübergreifend ohne Kompromisse.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🏆</div>
+          <h3>Ranked System</h3>
+          <p>Clim von Bronze bis zum Void-Rang. Unser ELO-basiertes System matcht dich mit gleichwertigen Gegnern.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🎨</div>
+          <h3>Skins & Cosmetics</h3>
+          <p>Tausende Anpassungsmöglichkeiten – keine Pay-to-Win-Elemente. Nur kosmetische Items.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MAPS -->
+  <section class="maps" id="maps">
+    <div class="container">
+      <h2 class="section-title">Schlachtfelder</h2>
+      <p class="section-sub">60 einzigartige Maps in 5 Kategorien – von engen Nahkampfgassen bis offenen Sniper-Arenen.</p>
+      <div class="maps-grid">
+        <div class="map-card" style="--col:#e63946">
+          <div class="map-img map-img-1"></div>
+          <div class="map-info">
+            <h3>NEON DISTRICT</h3>
+            <span class="map-type">Urban / Nahkampf</span>
+            <p>Stadtschluchten voller Leuchtreklamen. Enge Gassen, kurze Distanzen – perfekt für aggressive Spieler.</p>
+          </div>
+        </div>
+        <div class="map-card" style="--col:#2ec4b6">
+          <div class="map-img map-img-2"></div>
+          <div class="map-info">
+            <h3>ARCTIC STATION</h3>
+            <span class="map-type">Offen / Sniper</span>
+            <p>Eisige Forschungsanlage mit weiten Sichtlinien. Für Spieler mit ruhiger Hand und kühlem Kopf.</p>
+          </div>
+        </div>
+        <div class="map-card" style="--col:#f4a261">
+          <div class="map-img map-img-3"></div>
+          <div class="map-info">
+            <h3>DESERT RUINS</h3>
+            <span class="map-type">Mittel / Taktik</span>
+            <p>Antike Ruinen in der Wüste. Zahlreiche Flanken und vertikale Ebenen für taktische Tiefe.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- WEAPONS -->
+  <section class="weapons" id="weapons">
+    <div class="container">
+      <h2 class="section-title">Waffenarsenal</h2>
+      <p class="section-sub">Über 80 Waffen in 6 Kategorien – anpassbar mit hunderten von Aufsätzen.</p>
+      <div class="weapons-tabs">
+        <button class="tab-btn active" data-cat="alle">Alle</button>
+        <button class="tab-btn" data-cat="sturmgewehr">Sturmgewehr</button>
+        <button class="tab-btn" data-cat="sniper">Sniper</button>
+        <button class="tab-btn" data-cat="smg">SMG</button>
+        <button class="tab-btn" data-cat="shotgun">Shotgun</button>
+      </div>
+      <div class="weapons-grid" id="weapons-grid">
+        <div class="weapon-card" data-cat="sturmgewehr">
+          <div class="weapon-bar-wrap"><div class="weapon-bar" style="--w:90%"></div></div>
+          <h4>AK-VOID</h4>
+          <p>Schaden: ████████░░</p>
+          <p>Feuerrate: ███████░░░</p>
+          <p>Reichweite: ████████░░</p>
+        </div>
+        <div class="weapon-card" data-cat="sniper">
+          <div class="weapon-bar-wrap"><div class="weapon-bar" style="--w:100%"></div></div>
+          <h4>GHOST-50</h4>
+          <p>Schaden: ██████████</p>
+          <p>Feuerrate: ██░░░░░░░░</p>
+          <p>Reichweite: ██████████</p>
+        </div>
+        <div class="weapon-card" data-cat="smg">
+          <div class="weapon-bar-wrap"><div class="weapon-bar" style="--w:60%"></div></div>
+          <h4>RAPID-X</h4>
+          <p>Schaden: █████░░░░░</p>
+          <p>Feuerrate: ██████████</p>
+          <p>Reichweite: ████░░░░░░</p>
+        </div>
+        <div class="weapon-card" data-cat="shotgun">
+          <div class="weapon-bar-wrap"><div class="weapon-bar" style="--w:85%"></div></div>
+          <h4>BREACHER</h4>
+          <p>Schaden: █████████░</p>
+          <p>Feuerrate: ███░░░░░░░</p>
+          <p>Reichweite: ██░░░░░░░░</p>
+        </div>
+        <div class="weapon-card" data-cat="sturmgewehr">
+          <div class="weapon-bar-wrap"><div class="weapon-bar" style="--w:75%"></div></div>
+          <h4>M4-STRIKER</h4>
+          <p>Schaden: ███████░░░</p>
+          <p>Feuerrate: ████████░░</p>
+          <p>Reichweite: ████████░░</p>
+        </div>
+        <div class="weapon-card" data-cat="sniper">
+          <div class="weapon-bar-wrap"><div class="weapon-bar" style="--w:80%"></div></div>
+          <h4>PHANTOM SR</h4>
+          <p>Schaden: ████████░░</p>
+          <p>Feuerrate: ████░░░░░░</p>
+          <p>Reichweite: █████████░</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TRAILER -->
+  <section class="trailer-section" id="trailer">
+    <div class="container">
+      <h2 class="section-title">Offizieller Trailer</h2>
+      <div class="trailer-wrapper">
+        <div class="trailer-placeholder" id="trailer-play">
+          <div class="trailer-overlay">
+            <div class="play-btn">&#9654;</div>
+            <p>Trailer abspielen</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- DOWNLOAD -->
+  <section class="download" id="download">
+    <div class="container">
+      <h2 class="section-title">Bereit für die <span>Action</span>?</h2>
+      <p class="section-sub">VOIDSTRIKE ist kostenlos – auf allen Plattformen. Kein Abo, kein Pay-to-Win.</p>
+      <div class="download-cards">
+        <div class="dl-card">
+          <div class="dl-icon">🖥️</div>
+          <h3>Windows / PC</h3>
+          <p>Empfohlen: RTX 3060, 16 GB RAM</p>
+          <a href="#" class="btn btn-primary">Download – PC</a>
+        </div>
+        <div class="dl-card">
+          <div class="dl-icon">🎮</div>
+          <h3>PlayStation 5</h3>
+          <p>Mit DualSense-Haptic-Feedback</p>
+          <a href="#" class="btn btn-primary">Im PS Store</a>
+        </div>
+        <div class="dl-card">
+          <div class="dl-icon">🟩</div>
+          <h3>Xbox Series X|S</h3>
+          <p>Optimiert für Series X Leistung</p>
+          <a href="#" class="btn btn-primary">Im Xbox Store</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="container footer-inner">
+      <div class="footer-logo">VOID<span>STRIKE</span></div>
+      <div class="footer-links">
+        <a href="#">Impressum</a>
+        <a href="#">Datenschutz</a>
+        <a href="#">AGB</a>
+        <a href="#">Support</a>
+        <a href="#">Community</a>
+      </div>
+      <p class="footer-copy">&copy; 2025 VoidStrike Studios. Alle Rechte vorbehalten.</p>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
