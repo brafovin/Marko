@@ -277,9 +277,10 @@ function generateMap() {
   const B = 40;
   G.walls.push({x:0,y:0,w:MAP_W,h:B},{x:0,y:MAP_H-B,w:MAP_W,h:B},{x:0,y:0,w:B,h:MAP_H},{x:MAP_W-B,y:0,w:B,h:MAP_H});
 
-  if (G.mapType === 'jungle')  buildJungle();
-  else if (G.mapType === 'arctic') buildArctic();
-  else buildVolcano();
+  if (G.mapType === 'jungle')       buildJungle();
+  else if (G.mapType === 'arctic')  buildArctic();
+  else if (G.mapType === 'volcano') buildVolcano();
+  else                              buildSpace();
 }
 
 function buildJungle() {
@@ -884,15 +885,6 @@ function updateCamera(){
 }
 
 // ─── WAVE MANAGEMENT ─────────────────────────────────────────────
-function checkWaveComplete(){
-  if(G.enemies.length===0 && G.waveActive){
-    G.waveActive=false;
-    G.waveTimer=G.waveDelay;
-    // unlock weapons
-    unlockWavesWeapons();
-  }
-}
-
 function unlockWavesWeapons(){
   const p=G.player;
   WEAPONS.forEach(w=>{
@@ -1546,7 +1538,8 @@ function drawCrosshair(){
   const mx=G.mx, my=G.my;
   const w=G.player.weapons[G.player.weapon];
   const spread=w.spread*55;
-  const reloadProg=w.reloading?(performance.now()-w.reloadStart)/w.reloadTime:0;
+  const effectiveRT = w.reloadTime * (G.player._reloadMult||1);
+  const reloadProg=w.reloading?(performance.now()-w.reloadStart)/effectiveRT:0;
   const col=w.reloading?'rgba(255,180,0,0.85)':'rgba(255,255,255,0.85)';
   const s=7;
 
@@ -1821,7 +1814,11 @@ window.addEventListener('keydown',e=>{
       }
     }
   }
-  if(e.code==='Escape'){ G.running=!G.running; if(G.running) requestAnimationFrame(gameLoop); }
+  if(e.code==='Escape'){
+    if(G.paused) return; // level-up overlay open, ignore
+    G.running=!G.running;
+    if(G.running) requestAnimationFrame(gameLoop);
+  }
   e.preventDefault();
 });
 window.addEventListener('keyup',e=>{G.keys[e.code]=false;});
