@@ -726,7 +726,7 @@ function spawnBoss() {
   bossActive = true; bossAnnounceTimer = 180;
   boss = {
     x: W / 2, y: -80, targetY: 120,
-    hp: 300 * stage, maxHp: 300 * stage,
+    hp: stage === 1 ? 150 : 300 * stage, maxHp: stage === 1 ? 150 : 300 * stage,
     phase: 1, fireTimer: 0, fireTimer2: 0, fireTimer3: 0,
     wavePhase: 0, hitFlash: 0, movePhase: 0, vx: 1,
     alive: true, size: 44, entering: true
@@ -753,12 +753,13 @@ function updateBoss() {
 
   if (!boss.entering) {
     boss.fireTimer++;
-    var rate1 = Math.max(25, 60 - stage * 5);
+    var rate1 = stage === 1 ? 90 : Math.max(25, 60 - stage * 5);
     if (boss.fireTimer >= rate1) {
       boss.fireTimer = 0;
-      fireAimed(boss.x, boss.y, 3.5 + stage * 0.3, '#ff6600', 1);
+      fireAimed(boss.x, boss.y, stage === 1 ? 2.5 : 3.5 + stage * 0.3, '#ff6600', 1);
       var s;
-      for (s = -3; s <= 3; s++) addEnemyBullet(boss.x, boss.y, s * 1.2, 3, '#ff3300', 6);
+      var spread = stage === 1 ? 2 : 3;
+      for (s = -spread; s <= spread; s++) addEnemyBullet(boss.x, boss.y, s * 1.0, stage === 1 ? 2 : 3, '#ff3300', 6);
     }
     if (boss.phase >= 2) {
       boss.fireTimer2++;
