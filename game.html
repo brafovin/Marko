@@ -959,6 +959,92 @@ var bombTimer = 0;
 var bombRadius = 0;
 var bombCooldown = 0;
 
+// =============================================================
+// LASER ATTACK (X key)
+// =============================================================
+var laserActive = false;
+var laserTimer = 0;
+var laserDuration = 50;   // frames the beam stays on
+var laserCooldown = 0;
+var laserMaxCooldown = 240; // 4 seconds at 60fps
+
+function useLaser() {
+  if (laserActive || laserCooldown > 0) return;
+  laserActive = true;
+  laserTimer = laserDuration;
+  laserCooldown = laserMaxCooldown;
+  screenShake = 4;
+}
+
+function updateLaser() {
+  if (!laserActive) return;
+  laserTimer--;
+
+  var lx = player.x;
+  // Damage enemies
+  var i;
+  for (i = enemies.length - 1; i >= 0; i--) {
+    var e = enemies[i];
+    if (Math.abs(e.x - lx) < 18) {
+      e.hp -= 4; e.hitFlash = 6;
+      if (e.hp <= 0) killEnemy(e, i);
+    }
+  }
+  // Damage boss
+  if (boss && boss.alive && Math.abs(boss.x - lx) < boss.size + 10) {
+    boss.hp -= 3; boss.hitFlash = 4;
+    if (boss.hp <= 0) killBoss();
+  }
+  // Destroy enemy bullets in beam path
+  for (i = enemyBullets.length - 1; i >= 0; i--) {
+    if (Math.abs(enemyBullets[i].x - lx) < 14) {
+      spawnParticles(enemyBullets[i].x, enemyBullets[i].y, 3, '#ff0044', 1, 3, 8, 16, 1, 2);
+      enemyBullets.splice(i, 1);
+    }
+  }
+
+  if (laserTimer <= 0) laserActive = false;
+}
+
+function drawLaser() {
+  if (!laserActive) return;
+  var progress = laserTimer / laserDuration;
+  var lx = player.x;
+  var alpha = Math.min(1, progress * 3);
+
+  ctx.save();
+  // Outer glow beam
+  glow('#ff00ff', 40);
+  ctx.globalAlpha = alpha * 0.5;
+  ctx.strokeStyle = '#ff00ff';
+  ctx.lineWidth = 18;
+  ctx.beginPath(); ctx.moveTo(lx, player.y); ctx.lineTo(lx, 0); ctx.stroke();
+
+  // Mid beam
+  glow('#ff88ff', 20);
+  ctx.globalAlpha = alpha * 0.8;
+  ctx.strokeStyle = '#ff44ff';
+  ctx.lineWidth = 8;
+  ctx.beginPath(); ctx.moveTo(lx, player.y); ctx.lineTo(lx, 0); ctx.stroke();
+
+  // Core white beam
+  noGlow();
+  ctx.globalAlpha = alpha;
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(lx, player.y); ctx.lineTo(lx, 0); ctx.stroke();
+
+  // Sparks at player origin
+  ctx.globalAlpha = alpha;
+  glow('#ff00ff', 20);
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath(); ctx.arc(lx, player.y, 6, 0, Math.PI * 2); ctx.fill();
+
+  ctx.globalAlpha = 1;
+  noGlow();
+  ctx.restore();
+}
+
 function useBomb() {
   if (player.bombs <= 0 || bombActive || bombCooldown > 0) return;
   player.bombs--;
@@ -1043,6 +1129,19 @@ function drawHUD() {
   ctx.fillStyle = '#00ccff'; ctx.font = 'bold 10px Courier New'; ctx.textAlign = 'left';
   ctx.fillText('WPN LV.' + player.weaponLevel, 10, H - 10);
   noGlow();
+
+  // Laser cooldown bar
+  var laserReady = laserCooldown <= 0 && !laserActive;
+  var laserFill = laserActive ? 1 : 1 - laserCooldown / laserMaxCooldown;
+  ctx.fillStyle = 'rgba(255,255,255,0.1)';
+  ctx.fillRect(10, H - 32, 80, 7);
+  glow(laserReady ? '#ff00ff' : '#aa00aa', laserReady ? 8 : 3);
+  ctx.fillStyle = laserActive ? '#ffffff' : (laserReady ? '#ff00ff' : '#880088');
+  ctx.fillRect(10, H - 32, 80 * laserFill, 7);
+  noGlow();
+  ctx.fillStyle = laserReady ? '#ff88ff' : '#884488';
+  ctx.font = 'bold 9px Courier New'; ctx.textAlign = 'left';
+  ctx.fillText('LASER [X]' + (laserReady ? ' READY' : ''), 10, H - 36);
 
   glow('#ffffff', 6);
   ctx.fillStyle = '#ffffff'; ctx.font = 'bold 13px Courier New'; ctx.textAlign = 'right';
@@ -1130,7 +1229,7 @@ function startNewGame() {
   powerups = []; particles = []; floatingTexts = [];
   boss = null; bossActive = false; bossDefeated = false;
   combo = 1; comboTimer = 0;
-  bombActive = false; bombCooldown = 0;
+  bombActive = false; bombCooldown = 0; laserActive = false; laserTimer = 0; laserCooldown = 0;
   spawnTimer = 0; wavesDone = false;
   stageAnnounceTimer = 120; bossAnnounceTimer = 0;
   buildStageWaves(stage);
@@ -1264,17 +1363,21 @@ function gameLoop() {
     if (player.alive) { updatePlayer(); updatePlayerBullets(); }
     updateEnemyBullets(); updateEnemies();
     if (bossActive && boss && boss.alive) updateBoss();
-    processSpawnQueue(); updateBomb();
+    processSpawnQueue(); updateBomb(); updateLaser();
     if (bombCooldown > 0) bombCooldown--;
+    if (laserCooldown > 0) laserCooldown--;
 
     if ((keys['KeyR'] || keys['r'] || keys['R'] || mouse.rightDown) && !bombActive) {
       useBomb(); keys['KeyR'] = false; keys['r'] = false; keys['R'] = false;
+    }
+    if (keys['KeyX'] || keys['x'] || keys['X']) {
+      useLaser(); keys['KeyX'] = false; keys['x'] = false; keys['X'] = false;
     }
     if (keys['Escape']) { keys['Escape'] = false; gameState = STATE.PAUSED; }
 
     applyScreenShake();
     drawBackground(); drawParticles(); drawPowerups();
-    drawEnemies(); drawBoss(); drawEnemyBullets(); drawPlayerBullets(); drawBomb();
+    drawEnemies(); drawBoss(); drawEnemyBullets(); drawPlayerBullets(); drawBomb(); drawLaser();
 
     if (player.alive) {
       var invFlicker = player.invincible > 0 && Math.floor(player.invincible / 5) % 2 === 0;
